@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SHAKZZ TV</title>
+    <link
+      rel="icon"
+      href="https://static0.gamerantimages.com/wordpress/wp-content/uploads/2025/04/sung-jinwoo-solo-leveling.jpg"
+      type="image/jpeg"
+    />
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <style>
+      body {
+        margin: 0;
+        height: 100vh;
+        /* Default: Center everything for mobile */
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center; 
+        background: url("https://static0.gamerantimages.com/wordpress/wp-content/uploads/2025/04/sung-jinwoo-solo-leveling.jpg") no-repeat center top;
+        background-size: cover;
+        
+        /* CHANGED FONT HERE */
+        font-family: 'Oswald', sans-serif;
+        
+        color: white;
+        overflow: hidden;
+        position: relative;
+      }
+      body::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(to right, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0) 60%);
+        z-index: 0;
+      }
+      
+      /* Main Container for Text */
+      .text-block {
+        position: relative;
+        z-index: 2;
+        display: flex;
+        flex-direction: column; 
+        align-items: center;    
+        text-align: center;     
+        gap: 5px;
+        text-transform: uppercase; /* Makes everything look strong */
+      }
+
+      /* Desktop Specific Styles (Min-width: 768px) */
+      @media (min-width: 768px) {
+        body {
+            /* 1. Move the whole block to the right side of the screen */
+            align-items: flex-end; 
+            padding-right: 15vw; 
+        }
+        
+        .text-block {
+            /* 2. Keep items centered relative to each other */
+            align-items: center; 
+            text-align: center;
+        }
+      }
+
+      h1, h2, h3, h4, h5 {
+        margin: 0;
+        text-shadow: 3px 3px 0px rgba(0, 0, 0, 1); /* Sharper shadow for game look */
+        opacity: 0; 
+        line-height: 1.1; 
+        letter-spacing: 1px; /* Spaced out slightly */
+      }
+      
+      .line1 { font-size: clamp(2.5rem, 7vw, 6rem); font-weight: 700; }
+      
+      /* Sub-header (FOR FREE) */
+      .line1-sub { font-size: clamp(2.2rem, 6vw, 5rem); font-weight: 700; }
+
+      .line2 { font-size: clamp(1.2rem, 3vw, 2.5rem); margin-top: 1rem; color: #ffdf5d; font-weight: 400; letter-spacing: 2px;}
+      
+      .line3 { margin-top: 1.5rem; opacity: 0; transition: opacity 0.5s ease; }
+      
+      /* Box/Button Style for the Link */
+      .line3 a { 
+        color: #ffdf5d; 
+        text-decoration: none; 
+        font-weight: bold; 
+        padding: 15px 40px;
+        border: 2px solid #ffdf5d; 
+        border-radius: 4px; /* Slightly sharper corners */
+        background-color: rgba(0, 0, 0, 0.7);
+        transition: all 0.3s ease;
+        display: inline-block;
+        letter-spacing: 2px;
+        font-size: clamp(1rem, 2vw, 1.5rem);
+        font-family: 'Oswald', sans-serif; /* Ensure button uses new font */
+      }
+      .line3 a:hover {
+        background-color: #ffdf5d;
+        color: #000;
+        box-shadow: 0 0 20px rgba(255, 223, 93, 0.8);
+      }
+
+      .cursor { display: inline-block; width: 0.6ch; animation: blink 0.7s infinite; }
+      @keyframes blink { 50% { opacity: 0; } }
+      
+      .fb-icon {
+        position: fixed;
+        top: 20px;
+        left: 20px;
+        z-index: 1000;
+      }
+      .fb-icon img {
+        width: 50px;
+        height: 50px;
+        filter: drop-shadow(2px 2px 5px rgba(0, 0, 0, 0.7));
+        transition: transform 0.3s;
+      }
+      .fb-icon img:hover { transform: scale(1.1); }
+    </style>
+  </head>
+  <body>
+    <a class="fb-icon" href="https://www.facebook.com/share/1D5MJt2PpR/" target="_blank">
+      <img src="https://upload.wikimedia.org/wikipedia/commons/5/51/Facebook_f_logo_(2019).svg" alt="Facebook" />
+    </a>
+
+    <div class="text-block">
+      <h1 id="line1" class="line1"></h1>
+      <h1 id="line1-sub" class="line1-sub"></h1>
+      
+      <h2 id="line2" class="line2"></h2>
+      <h4 id="line3" class="line3"></h4>
+    </div>
+
+    <script>
+      const lines = [
+        { id: "line1", text: "SHAKZZ TV" },
+        { id: "line1-sub", text: "FOR FREE" },
+        { id: "line2", text: "THE NEW SITE LINK" }
+      ];
+
+      function typeLines(lines, index=0) {
+        if(index >= lines.length) {
+            revealLink();
+            return;
+        }
+
+        const element = document.getElementById(lines[index].id);
+        let i=0;
+        element.style.opacity = 1; 
+        
+        const cursor = document.createElement("span");
+        cursor.className = "cursor";
+        cursor.textContent = "|";
+        element.appendChild(cursor);
+
+        const interval = setInterval(() => {
+          if(i < lines[index].text.length) {
+            element.insertBefore(document.createTextNode(lines[index].text[i]), cursor);
+            i++;
+          } else {
+            clearInterval(interval);
+            cursor.remove();
+            typeLines(lines, index+1); 
+          }
+        }, 100); 
+      }
+
+      function revealLink() {
+        const linkContainer = document.getElementById("line3");
+        linkContainer.innerHTML = '<a href="https://shakzz.online" target="_blank">https://shakzz.online</a>';
+        linkContainer.style.opacity = 1;
+      }
+
+      typeLines(lines);
+    </script>
+  </body>
+</html>
