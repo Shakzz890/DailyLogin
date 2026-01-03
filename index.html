@@ -34,10 +34,8 @@
       </div>
       <div class="sidebar-menu">
           <a href="#" onclick="switchView('home')" class="active"><i class="fa-solid fa-house"></i> Home</a>
-          <a href="#" onclick="switchView('home'); openCategory('movie', 'Movies')"><i class="fa-solid fa-film"></i> Movies</a>
-          
+          <a href="#" onclick="openSearchModal()"><i class="fa-regular fa-compass"></i> Explore</a>
           <a href="#" onclick="switchView('live')"><i class="fa-solid fa-tv"></i> Live TV</a>
-          
           <a href="#" onclick="openInfoModal('updates')"><i class="fa-solid fa-bell"></i> Updates</a>
           <a href="#" onclick="openInfoModal('contact')"><i class="fa-solid fa-envelope"></i> Contact</a>
       </div>
@@ -53,14 +51,42 @@
         <div class="logo-text">SHAKZZ<span style="color:#e50914;">TV</span></div>
     </div>
     <div class="nav-right">
-        <div id="viewerCounter" class="view-count" style="margin-right: 15px; color: #e50914; font-weight: bold; font-size: 0.9rem;">
+        <div id="viewerCounter" class="view-count" style="margin-right: 10px; color: #e50914; font-weight: bold; font-size: 0.9rem;">
             <i class="fa fa-eye"></i> <span id="live-counter">...</span>
         </div>
+        
         <div class="search-trigger" onclick="openSearchModal()"><i class="fa-solid fa-magnifying-glass"></i></div>
-        <div id="auth-container">
-            <button id="login-btn" class="login-btn">
-                <i class="fa-brands fa-google"></i> <span class="login-text">Sign In</span>
-            </button>
+        
+        <div class="auth-wrapper">
+            <div id="logged-out-state">
+                <button class="login-btn" onclick="toggleAuthDropdown('login')">
+                    <i class="fa-regular fa-user"></i> <span>Sign In</span>
+                </button>
+                <div class="auth-dropdown" id="login-dropdown">
+                    <div class="dropdown-header">Sign in now to save your watch history.</div>
+                    <div class="social-item" onclick="mockLogin('Google')"><i class="fa-brands fa-google" style="color:#DB4437;"></i> Google</div>
+                    <div class="social-item" onclick="mockLogin('Facebook')"><i class="fa-brands fa-facebook" style="color:#4267B2;"></i> Facebook</div>
+                    <div class="social-item" onclick="mockLogin('Yahoo')"><i class="fa-brands fa-yahoo" style="color:#410093;"></i> Yahoo</div>
+                    <div class="social-item" onclick="mockLogin('Microsoft')"><i class="fa-brands fa-microsoft" style="color:#00A4EF;"></i> Microsoft</div>
+                    <div class="social-item" onclick="mockLogin('Github')"><i class="fa-brands fa-github" style="color:#fff;"></i> Github</div>
+                </div>
+            </div>
+
+            <div id="logged-in-state" style="display:none;">
+                <img src="https://i.pinimg.com/736x/8b/16/7a/8b167af653c2399dd93b952a48740620.jpg" alt="Profile" class="nav-avatar" onclick="toggleAuthDropdown('profile')">
+                <div class="auth-dropdown" id="profile-dropdown">
+                    <div class="user-info-box">
+                        <img src="https://i.pinimg.com/736x/8b/16/7a/8b167af653c2399dd93b952a48740620.jpg" class="menu-avatar">
+                        <div class="user-text">
+                            <span class="user-name">Rizwen Obedoza</span>
+                        </div>
+                    </div>
+                    <div class="dropdown-divider"></div>
+                    <div class="menu-item"><i class="fa-solid fa-clock-rotate-left"></i> History list</div>
+                    <div class="menu-item"><i class="fa-regular fa-heart"></i> Favorite list</div>
+                    <div class="menu-item logout" onclick="doLogout()"><i class="fa-solid fa-power-off"></i> Sign out</div>
+                </div>
+            </div>
         </div>
     </div>
   </div>
@@ -71,19 +97,14 @@
         <div class="slider-dots" id="slider-dots"></div>
       </div>
 
-      <div class="row">
-        <h2 onclick="openCategory('airing_today', 'Latest Updates')">
-            <span class="section-indicator"></span> Latest Updates <i class="fa-solid fa-chevron-right"></i>
-        </h2>
-        <div class="list" id="latest-list"></div>
-      </div>
-
+      <div class="row"><h2 onclick="openCategory('airing_today', 'Latest Updates')"><span class="section-indicator"></span> Latest Updates <i class="fa-solid fa-chevron-right"></i></h2><div class="list" id="latest-list"></div></div>
       <div class="row"><h2 onclick="openCategory('kdrama', 'Top K-Drama')"><span class="section-indicator"></span> Top K-Drama <i class="fa-solid fa-chevron-right"></i></h2><div class="list" id="kdrama-list"></div></div>
       <div class="row"><h2 onclick="openCategory('cdrama', 'Top C-Drama')"><span class="section-indicator"></span> Top C-Drama <i class="fa-solid fa-chevron-right"></i></h2><div class="list" id="cdrama-list"></div></div>
       <div class="row"><h2 onclick="openCategory('movie', 'Trending Movies')"><span class="section-indicator"></span> Trending Movies <i class="fa-solid fa-chevron-right"></i></h2><div class="list" id="movies-list"></div></div>
       <div class="row"><h2 onclick="openCategory('tv', 'Trending TV Shows')"><span class="section-indicator"></span> Trending TV Shows <i class="fa-solid fa-chevron-right"></i></h2><div class="list" id="tvshows-list"></div></div>
       <div class="row"><h2 onclick="openCategory('anime', 'Trending Anime')"><span class="section-indicator"></span> Trending Anime <i class="fa-solid fa-chevron-right"></i></h2><div class="list" id="anime-list"></div></div>
-      
+      <div class="row"><h2 onclick="openCategory('upcoming', 'Upcoming Releases')"><span class="section-indicator"></span> Upcoming <i class="fa-solid fa-chevron-right"></i></h2><div class="list" id="upcoming-list"></div></div>
+
       <footer class="footer">
         <div class="footer-links">
           <a href="#" onclick="openInfoModal('dmca')">Disclaimer</a>
@@ -94,50 +115,45 @@
   </div>
 
   <div id="live-view" style="display: none;">
-      
-      <div class="main-player-section">
+      <div class="live-player-container">
             <div id="playerWrapper">
                 <div id="video">
                     <div class="skeleton" style="width: 100%; height: 100%; position: absolute; top: 0; left: 0; background: #000;"></div>
                 </div>
                 <div id="overlayContainer">
                     <div id="nowPlayingOverlay">
-                        <span style="width:8px; height:8px; background:#ef4444; border-radius:50%; display:inline-block;"></span>
+                        <span class="pulsing-dot"></span>
                         Now Playing: <span id="nowPlayingChannel">--</span>
                     </div>
                 </div>
             </div>
       </div>
-
-      <div class="channel-sidebar-container">
+      <div class="channel-section">
             <div class="search-container">
-                <input type="text" id="search" placeholder="Search channel..." class="focusable-element skeleton-effect" tabindex="0">
-                <span id="clearSearch" class="clear-btn">×</span>
+                <i class="fas fa-search search-icon"></i>
+                <input type="text" id="live-search-input" placeholder="Search channel..." class="focusable-element" oninput="filterChannels()">
+                <i class="fas fa-times clear-btn" id="live-clear-btn" style="display:none;" onclick="clearLiveSearch()"></i>
             </div>
-
             <div class="category-bar"></div>
-
-            <button id="mobileCategoryBtn" class="mobile-category-btn focusable-element">
+            <button id="mobileCategoryBtn" class="category-dropdown-btn focusable-element">
                 <span>All Categories</span>
                 <i class="fas fa-chevron-down"></i>
             </button>
-
             <div id="animeSeriesContainer" class="anime-selector-container" style="display: none;">
-                <select id="animeSeriesSelect" class="focusable-element skeleton-effect">
+                <select id="animeSeriesSelect" class="focusable-element">
                     <option value="" disabled selected>Select Anime Title</option>
                 </select>
             </div>
-            
-            <button id="clearFavoritesBtn" class="clear-fav-btn focusable-element" style="display:none;">
-                <i class="fas fa-trash"></i> Clear Favorites
-            </button>
-
-            <div id="channelCount">
+            <div id="clearFavWrapper" style="display:none; margin-bottom: 10px;">
+                 <button id="clearFavoritesBtn" class="clear-fav-btn">
+                    <i class="fas fa-trash"></i> Clear Favorites
+                </button>
+            </div>
+            <div class="channel-count-display">
                 <i class="fas fa-tv"></i>
                 <span id="channelCountText">Loading...</span>
             </div>
-
-            <div class="scrollable-list">
+            <div class="channel-list-wrapper">
                 <div class="channel-list" id="channelList"></div>
             </div>
       </div>
@@ -149,16 +165,43 @@
           <div class="detail-close" onclick="closeDetailView()"><i class="fa-solid fa-chevron-down"></i></div>
       </div>
       <div class="detail-content">
-          <h1 id="detail-title">Title</h1>
-          <div class="detail-meta"><span class="badge">HD</span></div>
-          <div class="server-select-container">
-               <select id="detail-server" onchange="changeDetailServer()">
-                   <option value="vidsrc.to">Server 1</option>
-                   <option value="vidsrc.me">Server 2</option>
-               </select>
+          <div class="detail-header-group">
+            <h1 id="detail-title">Title Here</h1>
+            <div class="detail-meta">
+                <span class="badge" id="detail-date">2025</span>
+                <span class="badge">HD</span>
+                <span class="badge" id="detail-lang">EN</span>
+            </div>
           </div>
-          <div class="detail-desc"><p id="detail-overview">...</p></div>
-          <div class="episode-grid" id="episode-grid"></div>
+          <div class="detail-desc">
+              <p id="detail-overview">...</p>
+          </div>
+          <div class="server-select-container">
+               <label>Source:</label>
+               <select id="detail-server" onchange="changeDetailServer()">
+                   <option value="vidsrc.to">Server 1 (VidSrc)</option>
+                   <option value="vidsrc.me">Server 2 (Me)</option>
+                   <option value="vidlink.pro">Server 3 (VidLink)</option>
+                   <option value="superembed.stream">Server 4 (Super)</option>
+                   <option value="2embed.cc">Server 5 (2Embed)</option>
+                   <option value="vidsrc.cc">Server 6 (CC)</option>
+                   <option value="vidsrc.xyz">Server 7 (XYZ)</option>
+                   <option value="vidsrc.vip">Server 8 (VIP)</option>
+                   <option value="vidsrc.net">Server 9 (Net)</option>
+     </select>
+          </div>
+          <div class="action-bar">
+              <div class="action-item" onclick="toggleDetailFavorite(this)"><i class="fa-regular fa-heart"></i><span>Favorite</span></div>
+              <div class="action-item" onclick="shareContent()"><i class="fa-solid fa-share-nodes"></i><span>Share</span></div>
+              <div class="action-item" onclick="downloadContent()"><i class="fa-solid fa-download"></i><span>Download</span></div>
+          </div>
+          <div class="episode-section">
+              <div class="episode-filters" style="display:none;"> 
+                  <select id="season-select" onchange="onSeasonChange()"></select>
+                  <select id="range-select" onchange="renderEpisodes()"></select>
+              </div>
+              <div class="episode-grid" id="episode-grid"></div>
+          </div>
       </div>
   </div>
 
@@ -170,12 +213,6 @@
       <div class="category-content" id="category-content">
           <div class="category-grid" id="category-grid"></div>
       </div>
-  </div>
-
-  <div class="search-modal" id="search-modal">
-    <span class="close" onclick="closeSearchModal()">×</span>
-    <input type="text" id="search-input" placeholder="Search..." oninput="searchTMDB()" />
-    <div class="results" id="search-results"></div>
   </div>
 
   <div id="categoryModal" class="modal-overlay">
@@ -195,7 +232,30 @@
           <div class="info-body" id="info-body"></div>
       </div>
   </div>
-  
+
+  <div class="search-modal" id="search-modal">
+    <div class="search-header-row">
+        <i class="fa-solid fa-arrow-left search-back-btn" onclick="closeSearchModal()"></i>
+        <div class="search-bar-wrapper">
+            <i class="fas fa-search search-modal-icon"></i>
+            <input type="text" id="search-input" placeholder="Search..." oninput="handleSearchInput()" />
+            <i class="fas fa-times search-clear-btn" id="search-clear-btn" onclick="clearSearchInput()"></i>
+        </div>
+    </div>
+    <div class="search-filters">
+        <button class="filter-pill active" onclick="setSearchFilter('all', this)">All</button>
+        <button class="filter-pill" onclick="setSearchFilter('tv', this)">TV Series</button>
+        <button class="filter-pill" onclick="setSearchFilter('movie', this)">Movies</button>
+        <button class="filter-pill" onclick="setSearchFilter('anime', this)">Anime</button>
+        <button class="filter-pill" onclick="setSearchFilter('kdrama', this)">K-Drama</button>
+        <button class="filter-pill" onclick="setSearchFilter('cdrama', this)">C-Drama</button>
+    </div>
+    <div class="results-container">
+        <h3 id="search-heading">Popular Search</h3>
+        <div class="results" id="search-results"></div>
+    </div>
+  </div>
+
   <script src="channels.js"></script>
   <script src="script.js"></script>
 
@@ -207,26 +267,21 @@
           const overlay = document.getElementById('overlay');
           
           if(viewName === 'live') {
-              // HIDE HOME, SHOW LIVE
               home.style.display = 'none';
               live.style.display = 'flex'; 
-              
               if(window.innerWidth < 1024) live.style.flexDirection = 'column';
               if(window.jwplayer) { try { jwplayer().resize(); } catch(e){} }
           } else {
-              // SHOW HOME, HIDE LIVE
               home.style.display = 'block';
               live.style.display = 'none';
               if(window.jwplayer) { try { jwplayer().stop(); } catch(e){} }
           }
-          
           if(window.innerWidth < 1024) {
               sidebar.classList.remove('open');
               overlay.classList.remove('active');
           }
       }
       
-      // Init Visitor Count
       let userId = localStorage.getItem('visitor_uid') || Math.random().toString(36).substring(7);
       localStorage.setItem('visitor_uid', userId);
       async function updateOnlineCount() {

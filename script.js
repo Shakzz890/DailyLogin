@@ -44,7 +44,6 @@ function renderChannelButtons(filter = "") {
 
     const selectedGroup = tabs[currentTabIndex];
 
-    // Anime Logic
     if (selectedGroup === "anime tagalog dubbed" && filter === "") {
         if (animeContainer) animeContainer.style.display = "block";
         list.innerHTML = ""; 
@@ -80,13 +79,14 @@ function renderChannelButtons(filter = "") {
         if (!matchesSearch || !matchesGroup || !matchesFavorites) return;
 
         const btn = document.createElement("div");
-        btn.className = (key === currentChannelKey) ? "channel-button active" : "channel-button";
+        btn.className = (key === currentChannelKey) ? "channel-button active focusable-element" : "channel-button focusable-element";
+        btn.setAttribute("tabindex", "0"); 
         btn.onclick = () => loadChannel(key);
 
         btn.innerHTML = `
-            <div class="channel-logo"><img src="${channel.logo}" loading="lazy"></div>
+            <div class="channel-logo"><img src="${channel.logo}" loading="lazy" onerror="this.src='logo.png'"></div>
             <span class="channel-name">${channel.name}</span>
-            <span class="favorite-star" style="margin-left:auto;">${channel.favorite ? "⭐" : "☆"}</span>
+            <i class="favorite-star ${channel.favorite ? 'fas' : 'far'} fa-star" style="color:${channel.favorite ? '#e50914' : '#666'}"></i>
         `;
         
         btn.querySelector('.favorite-star').onclick = (e) => {
@@ -101,8 +101,9 @@ function renderChannelButtons(filter = "") {
     });
 
     document.getElementById("channelCountText").innerText = `${shownCount} Channels`;
-    const clearBtn = document.getElementById('clearFavoritesBtn');
-    if(clearBtn) clearBtn.style.display = (selectedGroup === "favorites" && shownCount > 0) ? "block" : "none";
+    
+    const clearWrapper = document.getElementById('clearFavWrapper');
+    if (clearWrapper) clearWrapper.style.display = (selectedGroup === "favorites" && shownCount > 0) ? "block" : "none";
 }
 
 function renderAnimeEpisodes(episodes) {
@@ -112,8 +113,12 @@ function renderAnimeEpisodes(episodes) {
 
     episodes.forEach((ep) => {
         const div = document.createElement('div');
-        div.className = 'channel-button';
-        div.innerHTML = `<div class="channel-logo"><img src="${ep.logo}"></div><div class="channel-name">${ep.name}</div>`;
+        div.className = 'channel-button focusable-element';
+        div.setAttribute("tabindex", "0");
+        div.innerHTML = `
+            <div class="channel-logo"><img src="${ep.logo}" style="object-fit:cover;"></div>
+            <div class="channel-name">${ep.name}</div>
+        `;
         div.onclick = () => {
              jwplayer("video").setup({
                 autostart: true, width: "100%", aspectratio: "16:9", stretching: "exactfit",
@@ -134,9 +139,15 @@ function loadChannel(key) {
     localStorage.setItem("lastPlayedChannel", key);
 
     document.querySelectorAll(".channel-button").forEach(btn => btn.classList.remove("active"));
-    document.getElementById("nowPlayingChannel").innerText = channel.name;
+    
+    const buttons = document.querySelectorAll(".channel-button");
+    buttons.forEach(b => {
+       if(b.querySelector('.channel-name')?.innerText === channel.name) b.classList.add('active');
+    });
 
-    // Token Logic
+    const np = document.getElementById("nowPlayingChannel");
+    if(np) np.innerText = channel.name;
+
     const AUTH_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJTaGFrenoiLCJleHAiOjE3NjY5NTgzNTN9.RSc_LQ11txXXI0d7gZ8GvMOAwoHrWzUUr3CCQCM0Hco";
     let finalManifest = channel.manifestUri;
     if (finalManifest.includes("converse.nathcreqtives.com")) {
@@ -155,7 +166,7 @@ function loadChannel(key) {
 
     if(window.jwplayer) {
         jwplayer("video").setup({
-            autostart: true, width: "100%", aspectratio: "16:9", stretching: "exactfit",
+            autostart: true, width: "100%", height: "100%", stretching: "exactfit",
             sources: [{ file: finalManifest, type: playerType, drm: drmConfig }]
         });
     }
@@ -176,21 +187,41 @@ function saveFavoritesToStorage() {
     localStorage.setItem("favoriteChannels", JSON.stringify(favorites));
 }
 
+// --- LIVE SEARCH LOGIC (NEW) ---
+window.filterChannels = function() {
+    const query = document.getElementById('live-search-input').value;
+    const clearBtn = document.getElementById('live-clear-btn');
+    
+    if (query.trim().length > 0) {
+        clearBtn.style.display = 'block';
+    } else {
+        clearBtn.style.display = 'none';
+    }
+    
+    renderChannelButtons(query);
+};
+
+window.clearLiveSearch = function() {
+    document.getElementById('live-search-input').value = '';
+    filterChannels();
+};
+
 // --- CATEGORY TABS ---
 function setupCategoryTabs() {
-    const desktop = document.querySelector(".category-bar");
+    const desktopBar = document.querySelector(".category-bar");
     const mobileList = document.getElementById("mobileCategoryList");
     
+    if(desktopBar) desktopBar.innerHTML = '';
+    if(mobileList) mobileList.innerHTML = '';
+
     tabs.forEach((tab, index) => {
-        // Desktop
-        if(desktop) {
+        if(desktopBar) {
             const btn = document.createElement('button');
             btn.className = `category-button ${index === 0 ? 'active' : ''}`;
             btn.textContent = tab.toUpperCase();
             btn.onclick = () => handleTabClick(index, tab);
-            desktop.appendChild(btn);
+            desktopBar.appendChild(btn);
         }
-        // Mobile
         if(mobileList) {
             const div = document.createElement('div');
             div.className = `mobile-cat-option ${index === 0 ? 'active' : ''}`;
@@ -212,14 +243,13 @@ function handleTabClick(index, tabName) {
     const mobBtn = document.getElementById('mobileCategoryBtn');
     if(mobBtn) mobBtn.querySelector('span').textContent = tabName.toUpperCase();
     
-    renderChannelButtons();
+    renderChannelButtons(currentSearchFilter);
 }
 
 /* =========================================
    3. HOME PAGE LOGIC (Movies)
    ========================================= */
 let currentSlideIndex = 0;
-let slideInterval;
 
 async function fetchData(endpoint, page = 1) {
     try {
@@ -232,13 +262,14 @@ async function fetchData(endpoint, page = 1) {
 
 async function initMovies() {
     try {
-        const [latest, kdrama, cdrama, anime, movies, tv] = await Promise.all([
+        const [latest, kdrama, cdrama, anime, movies, tv, upcoming] = await Promise.all([
             fetchData('/tv/on_the_air?sort_by=popularity.desc'),
             fetchData('/discover/tv?with_original_language=ko&with_origin_country=KR&sort_by=popularity.desc'),
             fetchData('/discover/tv?with_original_language=zh&with_origin_country=CN&sort_by=popularity.desc'),
             fetchData('/discover/tv?with_genres=16&with_original_language=ja&sort_by=popularity.desc'),
             fetchData('/trending/movie/week'),
-            fetchData('/trending/tv/week')
+            fetchData('/trending/tv/week'),
+            fetchData('/movie/upcoming?region=US')
         ]);
         
         initSlider(movies.results);
@@ -248,6 +279,12 @@ async function initMovies() {
         displayList(movies.results, 'movies-list');
         displayList(tv.results, 'tvshows-list');
         displayList(anime.results, 'anime-list');
+        
+        // Upcoming with dates
+        if (upcoming && upcoming.results) {
+            displayUpcomingList(upcoming.results, 'upcoming-list');
+        }
+        
     } catch (e) { console.error(e); } 
 }
 
@@ -258,7 +295,8 @@ function displayList(items, containerId) {
     items.forEach(item => {
         if(!item.poster_path) return;
         const card = document.createElement('div');
-        card.className = 'movie-card';
+        card.className = 'movie-card focusable-element';
+        card.setAttribute("tabindex", "0");
         card.onclick = () => showDetailView(item);
         card.innerHTML = `
             <div class="badge-overlay">HD</div>
@@ -269,10 +307,51 @@ function displayList(items, containerId) {
     });
 }
 
+function displayUpcomingList(items, containerId) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    container.innerHTML = '';
+    
+    const today = new Date();
+    // Filter out old dates
+    const futureItems = items.filter(item => {
+        if (!item.release_date) return false;
+        const releaseDate = new Date(item.release_date);
+        return releaseDate >= today;
+    });
+
+    futureItems.sort((a, b) => new Date(a.release_date) - new Date(b.release_date));
+
+    if (futureItems.length === 0) {
+        container.innerHTML = '<p style="color:#888; font-size:0.9rem; margin:10px;">No upcoming releases found.</p>';
+        return;
+    }
+
+    futureItems.forEach(item => {
+        if(!item.poster_path) return;
+        
+        const dateObj = new Date(item.release_date);
+        const dateStr = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        
+        const card = document.createElement('div');
+        card.className = 'movie-card focusable-element';
+        card.onclick = () => showDetailView(item);
+        
+        card.innerHTML = `
+            <div class="coming-label">Coming ${dateStr}</div>
+            <img src="${POSTER_URL}${item.poster_path}" loading="lazy">
+            <div class="card-title">${item.title || item.name}</div>
+        `;
+        container.appendChild(card);
+    });
+}
+
 function initSlider(items) {
     const track = document.getElementById('slider-track');
+    const dotsContainer = document.getElementById('slider-dots');
     if (!track) return;
-    track.innerHTML = '';
+    track.innerHTML = ''; dotsContainer.innerHTML = '';
+    
     items.slice(0, 5).forEach((item, index) => {
         const slide = document.createElement('div');
         slide.className = 'slide';
@@ -280,81 +359,571 @@ function initSlider(items) {
         slide.innerHTML = `<div class="slide-content"><h1>${item.title || item.name}</h1></div>`;
         slide.onclick = () => showDetailView(item);
         track.appendChild(slide);
+        
+        const dot = document.createElement('div');
+        dot.className = index === 0 ? 'dot active' : 'dot';
+        dotsContainer.appendChild(dot);
     });
+    
     setInterval(() => {
         currentSlideIndex = (currentSlideIndex + 1) % 5;
         track.style.transform = `translateX(-${currentSlideIndex * 100}%)`;
+        document.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === currentSlideIndex));
     }, 4000);
 }
 
-// --- OVERLAYS ---
-let currentItem = null;
-function showDetailView(item) {
-    currentItem = item;
-    document.getElementById('detail-title').innerText = item.title || item.name;
-    document.getElementById('detail-overview').innerText = item.overview;
-    document.getElementById('detail-view').style.display = 'flex';
-    changeDetailServer();
+/* =========================================
+   4. CATEGORY VIEW LOGIC
+   ========================================= */
+let categoryState = {
+    endpoint: '',
+    title: '',
+    page: 1,
+    isLoading: false,
+    hasMore: true
+};
+
+window.openCategory = function(type, title) {
+    const view = document.getElementById('category-view');
+    document.getElementById('category-title').innerText = title;
+    document.getElementById('category-grid').innerHTML = ''; 
+    view.style.display = 'flex';
+    
+    let endpoint = '';
+    
+    if(type === 'airing_today') endpoint = '/tv/airing_today';
+    else if(type === 'upcoming') endpoint = '/movie/upcoming';
+    else if(type === 'kdrama') endpoint = '/discover/tv?with_original_language=ko&with_origin_country=KR&sort_by=popularity.desc';
+    else if(type === 'cdrama') endpoint = '/discover/tv?with_original_language=zh&with_origin_country=CN&sort_by=popularity.desc';
+    else if(type === 'movie') endpoint = '/movie/popular';
+    else if(type === 'tv') endpoint = '/tv/popular';
+    else if(type === 'anime') endpoint = '/discover/tv?with_genres=16&with_original_language=ja&sort_by=popularity.desc';
+    
+    categoryState.endpoint = endpoint;
+    categoryState.title = title;
+    categoryState.page = 1;
+    categoryState.hasMore = true;
+    categoryState.isLoading = false;
+    
+    loadMoreCategoryResults();
+    
+    document.getElementById('category-content').onscroll = handleCategoryScroll;
+};
+
+window.closeCategory = function() {
+    document.getElementById('category-view').style.display = 'none';
+};
+
+async function loadMoreCategoryResults() {
+    if(categoryState.isLoading || !categoryState.hasMore) return;
+    categoryState.isLoading = true;
+    
+    try {
+        const separator = categoryState.endpoint.includes('?') ? '&' : '?';
+        const url = `${BASE_URL}${categoryState.endpoint}${separator}api_key=${API_KEY}&page=${categoryState.page}`;
+        const res = await fetch(url);
+        const data = await res.json();
+        
+        if(!data.results || data.results.length === 0) {
+            categoryState.hasMore = false;
+        } else {
+            const grid = document.getElementById('category-grid');
+            data.results.forEach(item => {
+                if(!item.poster_path) return;
+                const card = document.createElement('div');
+                card.className = 'movie-card';
+                card.onclick = () => showDetailView(item);
+                
+                let badge = '';
+                if(categoryState.endpoint.includes('upcoming')) {
+                    const dateObj = new Date(item.release_date);
+                    const dateStr = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                    badge = `<div class="coming-label">Coming ${dateStr}</div>`;
+                }
+
+                card.innerHTML = `${badge}<img src="${POSTER_URL}${item.poster_path}" loading="lazy"><div class="card-title">${item.title || item.name}</div>`;
+                grid.appendChild(card);
+            });
+            categoryState.page++;
+        }
+    } catch(e) { console.error(e); }
+    finally { categoryState.isLoading = false; }
 }
+
+function handleCategoryScroll() {
+    const container = document.getElementById('category-content');
+    if(container.scrollTop + container.clientHeight >= container.scrollHeight - 100) {
+        loadMoreCategoryResults();
+    }
+}
+
+/* =========================================
+   5. DETAIL VIEW LOGIC
+   ========================================= */
+let currentItem = null;
+let currentDetails = null;
+
+async function showDetailView(item) {
+    currentItem = item;
+    const view = document.getElementById('detail-view');
+    
+    document.getElementById('detail-title').innerText = item.title || item.name;
+    document.getElementById('detail-overview').innerText = item.overview || "No overview available.";
+    document.getElementById('detail-date').innerText = (item.first_air_date || item.release_date || "2025").substring(0,4);
+    
+    const favBtn = document.querySelector('.action-item');
+    if(favBtn) favBtn.classList.remove('active');
+
+    const type = item.media_type === 'movie' || !item.first_air_date ? 'movie' : 'tv';
+    const filters = document.querySelector('.episode-filters');
+    
+    if (type === 'tv') {
+        try {
+            const res = await fetch(`${BASE_URL}/tv/${item.id}?api_key=${API_KEY}`);
+            currentDetails = await res.json();
+            if(filters) filters.style.display = 'flex';
+            populateSeasons(currentDetails.seasons);
+        } catch (e) { console.error(e); }
+    } else {
+        if(filters) filters.style.display = 'none';
+        renderMovieEpisode(); 
+    }
+
+    view.style.display = 'flex';
+    changeDetailServer(1, 1);
+}
+
 function closeDetailView() {
     document.getElementById('detail-view').style.display = 'none';
     document.getElementById('detail-video').src = '';
 }
-function changeDetailServer() {
+
+function changeDetailServer(season = 1, episode = 1) {
     if(!currentItem) return;
+    
+    // Determine media type (movie or tv)
     const type = currentItem.media_type === 'movie' || !currentItem.first_air_date ? 'movie' : 'tv';
     const server = document.getElementById('detail-server').value;
-    const url = server === 'vidsrc.to' ? `https://vidsrc.to/embed/${type}/${currentItem.id}` : `https://vidsrc.xyz/embed/${type}/${currentItem.id}`;
+    const id = currentItem.id;
+    let url = '';
+
+    // --- Server Logic ---
+    if(server === 'vidsrc.to') {
+        url = type==='tv' ? `https://vidsrc.to/embed/tv/${id}/${season}/${episode}` : `https://vidsrc.to/embed/movie/${id}`;
+    } else if(server === 'vidsrc.me') {
+        url = type==='tv' ? `https://vidsrc.me/embed/tv?tmdb=${id}&season=${season}&episode=${episode}` : `https://vidsrc.me/embed/movie?tmdb=${id}`;
+    } else if(server === 'vidlink.pro') {
+        url = type==='tv' ? `https://vidlink.pro/tv/${id}/${season}/${episode}` : `https://vidlink.pro/movie/${id}`;
+    } else if(server === 'superembed.stream') {
+        url = type==='tv' ? `https://superembed.stream/tv/${id}/${season}/${episode}` : `https://superembed.stream/movie/${id}`;
+    } else if(server === '2embed.cc') {
+        url = `https://www.2embed.cc/embed/${id}`; // Simple auto-detect
+    } else if(server === 'vidsrc.cc') {
+        url = type==='tv' ? `https://vidsrc.cc/v2/embed/tv/${id}/${season}/${episode}` : `https://vidsrc.cc/v2/embed/movie/${id}`;
+    } else if(server === 'vidsrc.xyz') {
+        url = `https://vidsrc.xyz/embed/${type}/${id}`;
+    } else if(server === 'vidsrc.vip') {
+        url = type==='tv' ? `https://vidsrc.vip/embed/tv/${id}/${season}/${episode}` : `https://vidsrc.vip/embed/movie/${id}`;
+    } else if(server === 'vidsrc.net') {
+        url = `https://vidsrc.net/embed/${type}/${id}`;
+    } 
+    
+    // --- NEW: NetMirror (net20.cc) ---
+    else if (server === 'net20.cc') {
+        // Warning: This server might block iframes or require a different ID (IMDB vs TMDB)
+        // Trying standard embed pattern:
+        url = type === 'tv' 
+            ? `https://net20.cc/embed/tv/${id}/${season}/${episode}` 
+            : `https://net20.cc/embed/movie/${id}`;
+    }
+
     document.getElementById('detail-video').src = url;
 }
 
-// Global Search
-window.openSearchModal = () => document.getElementById('search-modal').style.display = 'flex';
-window.closeSearchModal = () => document.getElementById('search-modal').style.display = 'none';
-window.searchTMDB = async function() {
-    const query = document.getElementById('search-input').value;
-    if (!query.trim()) return;
-    const res = await fetch(`${BASE_URL}/search/multi?api_key=${API_KEY}&query=${query}`);
-    const data = await res.json();
-    const container = document.getElementById('search-results');
-    container.innerHTML = '';
-    data.results.forEach(item => {
-        if(!item.poster_path) return;
-        const card = document.createElement('div');
-        card.className = 'movie-card';
-        card.onclick = () => showDetailView(item);
-        card.innerHTML = `<img src="${POSTER_URL}${item.poster_path}"><div class="card-title">${item.title||item.name}</div>`;
-        container.appendChild(card);
+
+function populateSeasons(seasons) {
+    const seasonSelect = document.getElementById('season-select');
+    seasonSelect.innerHTML = '';
+    seasons.forEach(s => {
+        if (s.season_number > 0) { 
+            const opt = document.createElement('option');
+            opt.value = s.season_number;
+            opt.textContent = `Season ${s.season_number}`;
+            opt.dataset.epCount = s.episode_count;
+            seasonSelect.appendChild(opt);
+        }
     });
+    if (seasonSelect.options.length === 0) {
+        const opt = document.createElement('option');
+        opt.value = 1; opt.textContent = "Season 1"; opt.dataset.epCount = 12;
+        seasonSelect.appendChild(opt);
+    }
+    seasonSelect.value = 1;
+    onSeasonChange();
+}
+
+function onSeasonChange() {
+    renderEpisodes(); 
+}
+
+function renderEpisodes() {
+    const seasonSelect = document.getElementById('season-select');
+    const grid = document.getElementById('episode-grid');
+    grid.innerHTML = '';
+    
+    const epCount = parseInt(seasonSelect.options[seasonSelect.selectedIndex]?.dataset.epCount || 12);
+    const currentS = seasonSelect.value;
+
+    for (let i = 1; i <= epCount; i++) {
+        const box = document.createElement('div');
+        box.className = 'ep-box';
+        box.textContent = i;
+        box.onclick = () => {
+            document.querySelectorAll('.ep-box').forEach(b => b.classList.remove('active'));
+            box.classList.add('active');
+            changeDetailServer(currentS, i);
+        };
+        if (i === 1) box.classList.add('active'); 
+        grid.appendChild(box);
+    }
+}
+
+function renderMovieEpisode() {
+    const grid = document.getElementById('episode-grid');
+    grid.innerHTML = '<div class="ep-box active" onclick="changeDetailServer(1,1)">Movie</div>';
+}
+
+/* --- Detail Buttons Logic --- */
+window.toggleDetailFavorite = function(btn) {
+    btn.classList.toggle('active');
+};
+
+window.shareContent = function() {
+    if (navigator.share) {
+        navigator.share({
+            title: document.getElementById('detail-title').innerText,
+            text: 'Watch this on Shakzz TV!',
+            url: window.location.href
+        });
+    } else {
+        navigator.clipboard.writeText(window.location.href).then(() => {
+             alert("Link copied to clipboard!");
+        });
+    }
+};
+
+window.downloadContent = function() {
+    if(!currentItem) return;
+    const title = currentItem.title || currentItem.name || "Movie";
+    // Shortener Logic
+    const SHORTENER_API_KEY = '141b190d3ff71530ac5b9150eedb1339c2e6a369';
+    const SHORTENER_BASE_URL = 'https://shortxlinks.com/api';
+    const targetUrl = `https://www.google.com/search?q=download+${encodeURIComponent(title)}+free`;
+    const finalLink = `${SHORTENER_BASE_URL}?api=${SHORTENER_API_KEY}&url=${encodeURIComponent(targetUrl)}`;
+    
+    window.open(finalLink, '_blank');
 };
 
 /* =========================================
-   4. UI INTERACTIONS
+   6. ADVANCED SEARCH & INFINITE BROWSE
    ========================================= */
+
+let browseState = {
+    category: 'all',  
+    page: 1,          
+    isLoading: false, 
+    hasMore: true     
+};
+
+const CATEGORY_ENDPOINTS = {
+    'all': '/trending/all/day',
+    'movie': '/movie/popular',
+    'tv': '/tv/popular',
+    'anime': '/discover/tv?with_genres=16&with_original_language=ja&sort_by=popularity.desc',
+    'kdrama': '/discover/tv?with_original_language=ko&with_origin_country=KR&sort_by=popularity.desc',
+    'cdrama': '/discover/tv?with_original_language=zh&with_origin_country=CN&sort_by=popularity.desc'
+};
+
+// Open Modal
+window.openSearchModal = () => {
+    document.getElementById('search-modal').style.display = 'flex';
+    const input = document.getElementById('search-input');
+    input.focus();
+    toggleClearButton(input.value);
+    
+    document.getElementById('search-results').onscroll = handleBrowseScroll;
+
+    if (!input.value.trim()) {
+        resetBrowseState('all');
+    }
+};
+
+window.closeSearchModal = () => {
+    document.getElementById('search-modal').style.display = 'none';
+};
+
+// Handle Input Typing
+window.handleSearchInput = () => {
+    const query = document.getElementById('search-input').value;
+    toggleClearButton(query);
+    searchTMDB();
+};
+
+// Clear Text & Reset
+window.clearSearchInput = () => {
+    const input = document.getElementById('search-input');
+    input.value = '';
+    input.focus();
+    toggleClearButton(''); 
+    resetBrowseState(browseState.category); 
+};
+
+// Toggle Clear Button Visibility
+function toggleClearButton(query) {
+    const btn = document.querySelector('.search-clear-btn');
+    if (query && query.length > 0) {
+        btn.style.display = 'block';
+    } else {
+        btn.style.display = 'none';
+    }
+}
+
+// Switch Filter Logic
+window.setSearchFilter = function(type, btn) {
+    document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    
+    const input = document.getElementById('search-input').value.trim();
+    if (input) {
+        browseState.category = type; 
+        searchTMDB(); 
+    } else {
+        resetBrowseState(type);
+    }
+};
+
+// Reset State & Load First Page
+async function resetBrowseState(category) {
+    browseState.category = category;
+    browseState.page = 1;
+    browseState.hasMore = true;
+    browseState.isLoading = false;
+    
+    const container = document.getElementById('search-results');
+    container.innerHTML = ''; 
+    
+    const heading = document.getElementById('search-heading');
+    const names = { 'all': 'Trending Today', 'tv': 'Popular TV Shows', 'movie': 'Popular Movies', 'anime': 'Trending Anime', 'kdrama': 'Top K-Drama', 'cdrama': 'Top C-Drama' };
+    heading.innerText = names[category] || "Popular";
+
+    await loadMoreBrowseResults();
+}
+
+// Fetch & Append Results
+async function loadMoreBrowseResults() {
+    if (browseState.isLoading || !browseState.hasMore) return;
+    browseState.isLoading = true;
+    
+    try {
+        const endpoint = CATEGORY_ENDPOINTS[browseState.category] || CATEGORY_ENDPOINTS['all'];
+        const separator = endpoint.includes('?') ? '&' : '?';
+        const url = `${BASE_URL}${endpoint}${separator}api_key=${API_KEY}&page=${browseState.page}`;
+
+        const res = await fetch(url);
+        const data = await res.json();
+        
+        if (!data.results || data.results.length === 0) {
+            browseState.hasMore = false;
+        } else {
+            renderBrowseResults(data.results);
+            browseState.page++; 
+        }
+
+    } catch (e) { console.error(e); } finally { browseState.isLoading = false; }
+}
+
+function handleBrowseScroll() {
+    const container = document.getElementById('search-results');
+    if (container.scrollTop + container.clientHeight >= container.scrollHeight - 100) {
+        if (!document.getElementById('search-input').value.trim()) {
+            loadMoreBrowseResults();
+        }
+    }
+}
+
+function renderBrowseResults(items) {
+    const container = document.getElementById('search-results');
+    items.forEach((item, index) => {
+        if(!item.poster_path) return;
+        const card = document.createElement('div');
+        card.className = 'movie-card';
+        card.style.position = 'relative';
+        card.onclick = () => { closeSearchModal(); showDetailView(item); };
+        
+        let badge = '';
+        if (browseState.page === 1 && index < 3) {
+            badge = `<div class="badge-overlay" style="background:#e50914;">HOT</div>`;
+        }
+
+        card.innerHTML = `
+            ${badge}
+            <img src="${POSTER_URL}${item.poster_path}" loading="lazy" style="border-radius:8px;">
+            <div class="card-title">${item.title || item.name}</div>
+        `;
+        container.appendChild(card);
+    });
+}
+
+// Search TMDB (Text Input)
+window.searchTMDB = async function() {
+    const query = document.getElementById('search-input').value;
+    const heading = document.getElementById('search-heading');
+
+    if (!query.trim()) {
+        resetBrowseState(browseState.category); 
+        return; 
+    }
+
+    heading.innerText = "Search Results";
+    
+    try {
+        const res = await fetch(`${BASE_URL}/search/multi?api_key=${API_KEY}&query=${query}`);
+        const data = await res.json();
+        const container = document.getElementById('search-results');
+        container.innerHTML = '';
+        
+        if (!data.results || data.results.length === 0) {
+            container.innerHTML = '<p style="color:#888; padding:10px;">No results found.</p>';
+            return;
+        }
+
+        data.results.forEach(item => {
+            if(!item.poster_path) return;
+            if (browseState.category === 'movie' && item.media_type !== 'movie') return;
+            if (browseState.category === 'tv' && item.media_type !== 'tv') return;
+
+            const card = document.createElement('div');
+            card.className = 'movie-card';
+            card.onclick = () => { closeSearchModal(); showDetailView(item); };
+            card.innerHTML = `<img src="${POSTER_URL}${item.poster_path}"><div class="card-title">${item.title||item.name}</div>`;
+            container.appendChild(card);
+        });
+    } catch(e) { console.error(e); }
+};
+
+
+/* =========================================
+   7. AUTHENTICATION & UI INTERACTIONS
+   ========================================= */
+window.toggleAuthDropdown = function(type) {
+    const loginDrop = document.getElementById('login-dropdown');
+    const profileDrop = document.getElementById('profile-dropdown');
+    
+    if (type === 'login') {
+        loginDrop.classList.toggle('show');
+    } else if (type === 'profile') {
+        profileDrop.classList.toggle('show');
+    }
+};
+
+window.mockLogin = function(provider) {
+    alert(`Signing in with ${provider}... (Mock)`);
+    localStorage.setItem('isLoggedIn', 'true');
+    checkLoginState();
+};
+
+window.doLogout = function() {
+    localStorage.setItem('isLoggedIn', 'false');
+    checkLoginState();
+};
+
+function checkLoginState() {
+    const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+    const loggedOutDiv = document.getElementById('logged-out-state');
+    const loggedInDiv = document.getElementById('logged-in-state');
+    const loginDrop = document.getElementById('login-dropdown');
+    const profileDrop = document.getElementById('profile-dropdown');
+
+    if (isLoggedIn) {
+        if(loggedOutDiv) loggedOutDiv.style.display = 'none';
+        if(loggedInDiv) loggedInDiv.style.display = 'block';
+    } else {
+        if(loggedOutDiv) loggedOutDiv.style.display = 'block';
+        if(loggedInDiv) loggedInDiv.style.display = 'none';
+    }
+    
+    if(loginDrop) loginDrop.classList.remove('show');
+    if(profileDrop) profileDrop.classList.remove('show');
+}
+
 window.toggleSidebar = function() {
     document.getElementById('main-sidebar').classList.toggle('open');
     document.getElementById('overlay').classList.toggle('active');
 };
+
+// Close dropdowns on click outside
+window.addEventListener('click', function(e) {
+    const authWrapper = document.querySelector('.auth-wrapper');
+    if (authWrapper && !authWrapper.contains(e.target)) {
+        const ld = document.getElementById('login-dropdown');
+        const pd = document.getElementById('profile-dropdown');
+        if(ld) ld.classList.remove('show');
+        if(pd) pd.classList.remove('show');
+    }
+});
 
 const mobCatBtn = document.getElementById('mobileCategoryBtn');
 if(mobCatBtn) mobCatBtn.onclick = () => document.getElementById('categoryModal').style.display = 'flex';
 const closeCatModal = document.getElementById('closeCategoryModal');
 if(closeCatModal) closeCatModal.onclick = () => document.getElementById('categoryModal').style.display = 'none';
 
+function setupTvRemoteLogic() {
+    window.addEventListener('keydown', (e) => {
+        const focused = document.activeElement;
+        const isInputActive = focused.tagName === 'INPUT' || focused.tagName === 'TEXTAREA';
+
+        if (e.key === 'Escape' || e.key === 'Backspace' || e.key === 'Back' || e.key === 'Exit') {
+            if (e.key === 'Backspace' && isInputActive) return;
+            e.preventDefault();
+            
+            const searchModal = document.getElementById('search-modal');
+            const categoryModal = document.getElementById('categoryModal');
+            const detailView = document.getElementById('detail-view');
+            const categoryView = document.getElementById('category-view');
+            const sidebar = document.getElementById('main-sidebar');
+
+            if (searchModal && searchModal.style.display === 'flex') {
+                closeSearchModal(); return;
+            }
+            if (categoryModal && categoryModal.style.display === 'flex') {
+                categoryModal.style.display = 'none'; return;
+            }
+            if (detailView && detailView.style.display === 'flex') {
+                closeDetailView(); return;
+            }
+            if (categoryView && categoryView.style.display === 'flex') {
+                closeCategory(); return;
+            }
+            if (sidebar && sidebar.classList.contains('open')) {
+                toggleSidebar(); return;
+            }
+        }
+    });
+}
+
 // --- INITIALIZATION ---
 document.addEventListener('DOMContentLoaded', () => {
     CutieLoader.show();
     
-    // Setup UI
     setupCategoryTabs();
     initMovies();
+    setupTvRemoteLogic(); 
+    checkLoginState();
     
-    // Live TV Data
     if (typeof channels !== 'undefined') {
         sortedChannels = Object.entries(channels).sort((a, b) => a[1].name.localeCompare(b[1].name));
         loadFavoritesFromStorage();
         
-        // Setup Channel
         const lastPlayed = localStorage.getItem("lastPlayedChannel");
         if (lastPlayed && channels[lastPlayed]) currentChannelKey = lastPlayed;
         else currentChannelKey = sortedChannels[0]?.[0] || "";
@@ -363,11 +932,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if(currentChannelKey) loadChannel(currentChannelKey);
     }
     
-    // Search Listener for Live TV
     const searchInput = document.getElementById("search");
     if(searchInput) {
         searchInput.addEventListener("input", (e) => renderChannelButtons(e.target.value.trim()));
-        document.getElementById("clearSearch").onclick = () => { searchInput.value = ""; renderChannelButtons(""); };
+        const clear = document.getElementById("clearSearch");
+        if(clear) clear.onclick = () => { searchInput.value = ""; renderChannelButtons(""); };
     }
 
     setTimeout(() => CutieLoader.hide(), 1000);
