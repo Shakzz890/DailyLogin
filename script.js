@@ -6,7 +6,7 @@ const BASE_URL = 'https://api.themoviedb.org/3';
 const IMG_URL = 'https://image.tmdb.org/t/p/original';
 const POSTER_URL = 'https://image.tmdb.org/t/p/w300';
 
-// Track current playback position globally
+// Global Playback State
 let currentSeason = 1;
 let currentEpisode = 1;
 
@@ -29,7 +29,32 @@ const CutieLoader = {
 };
 
 /* =========================================
-   2. LIVE TV LOGIC
+   2. VIEW CONTROLLER
+   ========================================= */
+function switchView(viewName) {
+    const home = document.getElementById('home-view');
+    const live = document.getElementById('live-view');
+    const sidebar = document.getElementById('main-sidebar');
+    const overlay = document.getElementById('overlay');
+    
+    if(viewName === 'live') {
+        home.style.display = 'none';
+        live.style.display = 'flex'; 
+        if(window.innerWidth < 1024) live.style.flexDirection = 'column';
+        if(window.jwplayer) { try { jwplayer().resize(); } catch(e){} }
+    } else {
+        home.style.display = 'block';
+        live.style.display = 'none';
+        if(window.jwplayer) { try { jwplayer().stop(); } catch(e){} }
+    }
+    if(window.innerWidth < 1024) {
+        sidebar.classList.remove('open');
+        overlay.classList.remove('active');
+    }
+}
+
+/* =========================================
+   3. LIVE TV LOGIC
    ========================================= */
 const DEFAULT_CHANNEL_ID = "Kapamilya";
 let currentSearchFilter = "";
@@ -48,6 +73,7 @@ function renderChannelButtons(filter = "") {
 
     const selectedGroup = tabs[currentTabIndex];
 
+    // Anime Logic
     if (selectedGroup === "anime tagalog dubbed" && filter === "") {
         if (animeContainer) animeContainer.style.display = "block";
         list.innerHTML = ""; 
@@ -71,6 +97,7 @@ function renderChannelButtons(filter = "") {
         if (animeContainer) animeContainer.style.display = "none";
     }
 
+    // Standard Channel Logic
     list.innerHTML = "";
     let shownCount = 0;
     
@@ -105,7 +132,6 @@ function renderChannelButtons(filter = "") {
     });
 
     document.getElementById("channelCountText").innerText = `${shownCount} Channels`;
-    
     const clearWrapper = document.getElementById('clearFavWrapper');
     if (clearWrapper) clearWrapper.style.display = (selectedGroup === "favorites" && shownCount > 0) ? "block" : "none";
 }
@@ -143,7 +169,6 @@ function loadChannel(key) {
     localStorage.setItem("lastPlayedChannel", key);
 
     document.querySelectorAll(".channel-button").forEach(btn => btn.classList.remove("active"));
-    
     const buttons = document.querySelectorAll(".channel-button");
     buttons.forEach(b => {
        if(b.querySelector('.channel-name')?.innerText === channel.name) b.classList.add('active');
@@ -191,17 +216,11 @@ function saveFavoritesToStorage() {
     localStorage.setItem("favoriteChannels", JSON.stringify(favorites));
 }
 
-// --- LIVE SEARCH LOGIC (NEW) ---
+// Live Search
 window.filterChannels = function() {
     const query = document.getElementById('live-search-input').value;
     const clearBtn = document.getElementById('live-clear-btn');
-    
-    if (query.trim().length > 0) {
-        clearBtn.style.display = 'block';
-    } else {
-        clearBtn.style.display = 'none';
-    }
-    
+    clearBtn.style.display = query.trim().length > 0 ? 'block' : 'none';
     renderChannelButtons(query);
 };
 
@@ -210,7 +229,7 @@ window.clearLiveSearch = function() {
     filterChannels();
 };
 
-// --- CATEGORY TABS ---
+// Category Tabs
 function setupCategoryTabs() {
     const desktopBar = document.querySelector(".category-bar");
     const mobileList = document.getElementById("mobileCategoryList");
@@ -243,15 +262,13 @@ function handleTabClick(index, tabName) {
     currentTabIndex = index;
     document.querySelectorAll('.category-button').forEach((b, i) => b.classList.toggle('active', i === index));
     document.querySelectorAll('.mobile-cat-option').forEach((b, i) => b.classList.toggle('active', i === index));
-    
     const mobBtn = document.getElementById('mobileCategoryBtn');
     if(mobBtn) mobBtn.querySelector('span').textContent = tabName.toUpperCase();
-    
     renderChannelButtons(currentSearchFilter);
 }
 
 /* =========================================
-   3. HOME PAGE LOGIC (Movies)
+   4. HOME PAGE LOGIC (Movies)
    ========================================= */
 let currentSlideIndex = 0;
 
@@ -284,7 +301,6 @@ async function initMovies() {
         displayList(tv.results, 'tvshows-list');
         displayList(anime.results, 'anime-list');
         
-        // Upcoming with dates
         if (upcoming && upcoming.results) {
             displayUpcomingList(upcoming.results, 'upcoming-list');
         }
@@ -317,7 +333,6 @@ function displayUpcomingList(items, containerId) {
     container.innerHTML = '';
     
     const today = new Date();
-    // Filter out old dates
     const futureItems = items.filter(item => {
         if (!item.release_date) return false;
         const releaseDate = new Date(item.release_date);
@@ -333,14 +348,11 @@ function displayUpcomingList(items, containerId) {
 
     futureItems.forEach(item => {
         if(!item.poster_path) return;
-        
         const dateObj = new Date(item.release_date);
         const dateStr = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-        
         const card = document.createElement('div');
         card.className = 'movie-card focusable-element';
         card.onclick = () => showDetailView(item);
-        
         card.innerHTML = `
             <div class="coming-label">Coming ${dateStr}</div>
             <img src="${POSTER_URL}${item.poster_path}" loading="lazy">
@@ -377,92 +389,7 @@ function initSlider(items) {
 }
 
 /* =========================================
-   4. CATEGORY VIEW LOGIC
-   ========================================= */
-let categoryState = {
-    endpoint: '',
-    title: '',
-    page: 1,
-    isLoading: false,
-    hasMore: true
-};
-
-window.openCategory = function(type, title) {
-    const view = document.getElementById('category-view');
-    document.getElementById('category-title').innerText = title;
-    document.getElementById('category-grid').innerHTML = ''; 
-    view.style.display = 'flex';
-    
-    let endpoint = '';
-    
-    if(type === 'airing_today') endpoint = '/tv/airing_today';
-    else if(type === 'upcoming') endpoint = '/movie/upcoming';
-    else if(type === 'kdrama') endpoint = '/discover/tv?with_original_language=ko&with_origin_country=KR&sort_by=popularity.desc';
-    else if(type === 'cdrama') endpoint = '/discover/tv?with_original_language=zh&with_origin_country=CN&sort_by=popularity.desc';
-    else if(type === 'movie') endpoint = '/movie/popular';
-    else if(type === 'tv') endpoint = '/tv/popular';
-    else if(type === 'anime') endpoint = '/discover/tv?with_genres=16&with_original_language=ja&sort_by=popularity.desc';
-    
-    categoryState.endpoint = endpoint;
-    categoryState.title = title;
-    categoryState.page = 1;
-    categoryState.hasMore = true;
-    categoryState.isLoading = false;
-    
-    loadMoreCategoryResults();
-    
-    document.getElementById('category-content').onscroll = handleCategoryScroll;
-};
-
-window.closeCategory = function() {
-    document.getElementById('category-view').style.display = 'none';
-};
-
-async function loadMoreCategoryResults() {
-    if(categoryState.isLoading || !categoryState.hasMore) return;
-    categoryState.isLoading = true;
-    
-    try {
-        const separator = categoryState.endpoint.includes('?') ? '&' : '?';
-        const url = `${BASE_URL}${categoryState.endpoint}${separator}api_key=${API_KEY}&page=${categoryState.page}`;
-        const res = await fetch(url);
-        const data = await res.json();
-        
-        if(!data.results || data.results.length === 0) {
-            categoryState.hasMore = false;
-        } else {
-            const grid = document.getElementById('category-grid');
-            data.results.forEach(item => {
-                if(!item.poster_path) return;
-                const card = document.createElement('div');
-                card.className = 'movie-card';
-                card.onclick = () => showDetailView(item);
-                
-                let badge = '';
-                if(categoryState.endpoint.includes('upcoming')) {
-                    const dateObj = new Date(item.release_date);
-                    const dateStr = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                    badge = `<div class="coming-label">Coming ${dateStr}</div>`;
-                }
-
-                card.innerHTML = `${badge}<img src="${POSTER_URL}${item.poster_path}" loading="lazy"><div class="card-title">${item.title || item.name}</div>`;
-                grid.appendChild(card);
-            });
-            categoryState.page++;
-        }
-    } catch(e) { console.error(e); }
-    finally { categoryState.isLoading = false; }
-}
-
-function handleCategoryScroll() {
-    const container = document.getElementById('category-content');
-    if(container.scrollTop + container.clientHeight >= container.scrollHeight - 100) {
-        loadMoreCategoryResults();
-    }
-}
-
-/* =========================================
-   5. DETAIL VIEW LOGIC
+   5. DETAIL VIEW (THE CRITICAL FIX)
    ========================================= */
 let currentItem = null;
 let currentDetails = null;
@@ -470,7 +397,6 @@ let currentDetails = null;
 async function showDetailView(item) {
     currentItem = item;
     const view = document.getElementById('detail-view');
-    
     document.getElementById('detail-title').innerText = item.title || item.name;
     document.getElementById('detail-overview').innerText = item.overview || "No overview available.";
     document.getElementById('detail-date').innerText = (item.first_air_date || item.release_date || "2025").substring(0,4);
@@ -478,10 +404,13 @@ async function showDetailView(item) {
     const favBtn = document.querySelector('.action-item');
     if(favBtn) favBtn.classList.remove('active');
 
-    const type = item.media_type === 'movie' || !item.first_air_date ? 'movie' : 'tv';
+    /* === FIX: Explicitly set media_type to TV or Movie to prevent ID collisions === */
+    const isTv = item.media_type === 'tv' || item.first_air_date || (item.name && !item.title);
+    currentItem.media_type = isTv ? 'tv' : 'movie'; // <--- THIS LINE FIXES THE BUG
+    
     const filters = document.querySelector('.episode-filters');
     
-    if (type === 'tv') {
+    if (isTv) {
         try {
             const res = await fetch(`${BASE_URL}/tv/${item.id}?api_key=${API_KEY}`);
             currentDetails = await res.json();
@@ -497,18 +426,15 @@ async function showDetailView(item) {
     changeDetailServer(1, 1);
 }
 
-// === FIX: Removed 'auth' check so it doesn't crash! ===
 function closeDetailView() {
-    // We just try to call the save function. If auth.js isn't ready or logged out, it handles itself.
+    // Attempt to save history (Auth logic handled safely by auth.js)
     if (currentItem && typeof window.saveWatchProgress === 'function') {
-        const type = currentItem.media_type === 'movie' || !currentItem.first_air_date ? 'movie' : 'tv';
+        const type = currentItem.media_type;
         const seasonToSave = type === 'tv' ? currentSeason : null;
         const episodeToSave = type === 'tv' ? currentEpisode : null;
-        
         window.saveWatchProgress(currentItem, seasonToSave, episodeToSave);
     }
     
-    // This line will now run successfully!
     document.getElementById('detail-view').style.display = 'none';
     document.getElementById('detail-video').src = '';
 }
@@ -516,58 +442,39 @@ function closeDetailView() {
 function changeDetailServer(season = 1, episode = 1) {
     if(!currentItem) return;
     
-    // ✅ FIX: Restore reliable media type detection
-    const type = currentItem.media_type === 'movie' || !currentItem.first_air_date ? 'movie' : 'tv';
-    
-    // Update global tracking
     currentSeason = season;
     currentEpisode = episode;
     
     const server = document.getElementById('detail-server').value;
     const id = currentItem.id;
+    const type = currentItem.media_type; // Uses the forced type from showDetailView
     let url = '';
 
-    // --- Server Logic (using the reliable `type` variable) ---
     if(server === 'vidsrc.to') {
-        url = type === 'tv' 
-            ? `https://vidsrc.to/embed/tv/${id}/${season}/${episode}` 
-            : `https://vidsrc.to/embed/movie/${id}`;
+        url = `https://vidsrc.to/embed/${type}/${id}${type==='tv'?`/${season}/${episode}`:''}`;
     } else if(server === 'vidsrc.me') {
-        url = type === 'tv' 
-            ? `https://vidsrc.me/embed/tv?tmdb=${id}&season=${season}&episode=${episode}` 
-            : `https://vidsrc.me/embed/movie?tmdb=${id}`;
+        url = type==='tv' ? `https://vidsrc.me/embed/tv?tmdb=${id}&season=${season}&episode=${episode}` : `https://vidsrc.me/embed/movie?tmdb=${id}`;
     } else if(server === 'vidlink.pro') {
-        url = type === 'tv' 
-            ? `https://vidlink.pro/tv/${id}/${season}/${episode}` 
-            : `https://vidlink.pro/movie/${id}`;
+        url = type==='tv' ? `https://vidlink.pro/tv/${id}/${season}/${episode}` : `https://vidlink.pro/movie/${id}`;
     } else if(server === 'superembed.stream') {
-        url = type === 'tv' 
-            ? `https://superembed.stream/tv/${id}/${season}/${episode}` 
-            : `https://superembed.stream/movie/${id}`;
+        url = type==='tv' ? `https://superembed.stream/tv/${id}/${season}/${episode}` : `https://superembed.stream/movie/${id}`;
     } else if(server === '2embed.cc') {
         url = `https://www.2embed.cc/embed/${id}`;
     } else if(server === 'vidsrc.cc') {
-        url = type === 'tv' 
-            ? `https://vidsrc.cc/v2/embed/tv/${id}/${season}/${episode}` 
-            : `https://vidsrc.cc/v2/embed/movie/${id}`;
+        url = type==='tv' ? `https://vidsrc.cc/v2/embed/tv/${id}/${season}/${episode}` : `https://vidsrc.cc/v2/embed/movie/${id}`;
     } else if(server === 'vidsrc.xyz') {
         url = `https://vidsrc.xyz/embed/${type}/${id}`;
     } else if(server === 'vidsrc.vip') {
-        url = type === 'tv' 
-            ? `https://vidsrc.vip/embed/tv/${id}/${season}/${episode}` 
-            : `https://vidsrc.vip/embed/movie/${id}`;
+        url = type==='tv' ? `https://vidsrc.vip/embed/tv/${id}/${season}/${episode}` : `https://vidsrc.vip/embed/movie/${id}`;
     } else if(server === 'vidsrc.net') {
         url = `https://vidsrc.net/embed/${type}/${id}`;
     } else if(server === 'net20.cc') {
-        url = type === 'tv' 
-            ? `https://net20.cc/embed/tv/${id}/${season}/${episode}` 
-            : `https://net20.cc/embed/movie/${id}`;
+        url = type==='tv' ? `https://net20.cc/embed/tv/${id}/${season}/${episode}` : `https://net20.cc/embed/movie/${id}`;
     }
 
-    // ✅ Load the video
     document.getElementById('detail-video').src = url;
     
-    // ✅ Auto-save progress (safe even if auth.js isn't loaded)
+    // Auto-save logic
     if (typeof window.saveWatchProgress === 'function') {
         window.saveWatchProgress(currentItem, type === 'tv' ? season : null, type === 'tv' ? episode : null);
     }
@@ -614,7 +521,7 @@ function renderEpisodes() {
         box.onclick = () => {
             document.querySelectorAll('.ep-box').forEach(b => b.classList.remove('active'));
             box.classList.add('active');
-            currentEpisode = i; // Track selected episode
+            currentEpisode = i; 
             changeDetailServer(currentSeason, i);
         };
         if (i === 1) {
@@ -663,7 +570,6 @@ window.downloadContent = function() {
 /* =========================================
    6. ADVANCED SEARCH & INFINITE BROWSE
    ========================================= */
-
 let browseState = {
     category: 'all',  
     page: 1,          
@@ -849,10 +755,8 @@ window.searchTMDB = async function() {
 
 
 /* =========================================
-   7. UI INTERACTIONS (Auth handled in auth.js)
+   7. UI INTERACTIONS
    ========================================= */
-
-// This function prevents UI flickering by checking LocalStorage before Firebase loads
 function checkLoginState() {
     const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
     const loggedOutDiv = document.getElementById('logged-out-state');
@@ -868,7 +772,6 @@ function checkLoginState() {
         if(loggedInDiv) loggedInDiv.style.display = 'none';
     }
     
-    // Reset dropdowns
     if(loginDrop) loginDrop.classList.remove('show');
     if(profileDrop) profileDrop.classList.remove('show');
 }
