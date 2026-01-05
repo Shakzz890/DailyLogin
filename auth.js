@@ -1,4 +1,6 @@
-/* auth.js - DIAGNOSTIC VERSION */
+/* === FIXED AUTH.JS === */
+
+// 1. FIX TRAILING SPACES IN IMPORTS
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { 
     getAuth, 
@@ -8,8 +10,8 @@ import {
     onAuthStateChanged, 
     GoogleAuthProvider, 
     GithubAuthProvider,
-    setPersistence,
-    browserLocalPersistence 
+    browserLocalPersistence,
+    setPersistence 
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { 
     getFirestore, 
@@ -22,200 +24,93 @@ import {
     getDocs 
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-/* === 1. FIREBASE CONFIGURATION === */
 const firebaseConfig = {
-    apiKey: "AIzaSyBh2QAytkv2e27oCRaMgVdYTru7lSS8Ffo",
-    authDomain: "shakzz-tv.firebaseapp.com",
-    databaseURL: "https://shakzz-tv-default-rtdb.asia-southeast1.firebasedatabase.app",
-    projectId: "shakzz-tv",
-    storageBucket: "shakzz-tv.firebasestorage.app",
-    messagingSenderId: "640873351782",
-    appId: "1:640873351782:web:9fa2bb26142528f898bba7",
-    measurementId: "G-Y9BSQ0NT4H"
+    // ... your config ...
+    databaseURL: "https://shakzz-tv-default-rtdb.asia-southeast1.firebasedatabase.app" // NO SPACE
 };
 
-/* === 2. INITIALIZE SERVICES === */
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
-const googleProvider = new GoogleAuthProvider();
-const githubProvider = new GithubAuthProvider();
 
-/* === 3. FORCE PERSISTENCE (FIX FOR MOBILE) === */
-// This tells the phone "Please remember this user forever"
+// 2. SET PERSISTENCE FIRST
 setPersistence(auth, browserLocalPersistence)
     .then(() => {
-        console.log("Persistence set to local.");
+        console.log("✅ Persistence configured");
+        initializeAuth();
     })
     .catch((error) => {
-        console.error("Persistence Error:", error);
+        console.error("❌ Persistence failed:", error);
     });
 
-/* === 4. CHECK LOGIN STATUS (DIAGNOSTIC ALERTS) === */
-getRedirectResult(auth)
-    .then((result) => {
-        if (result) {
-            // IF THIS ALERT SHOWS, THE LOGIN WAS SUCCESSFUL
-            alert("SUCCESS: Google sent you back! Welcome " + result.user.displayName);
+function initializeAuth() {
+    // 3. MOVE getRedirectResult INSIDE
+    getRedirectResult(auth)
+        .then((result) => {
+            if (result) {
+                console.log("✅ Redirect login success:", result.user.email);
+            }
+        })
+        .catch((error) => {
+            console.error("❌ Redirect error:", error.code, error.message);
+        });
+
+    // 4. AUTH STATE LISTENER
+    onAuthStateChanged(auth, (user) => {
+        const loggedOutDiv = document.getElementById('logged-out-state');
+        const loggedInDiv = document.getElementById('logged-in-state');
+        const userAvatar = document.querySelector('.nav-avatar');
+        const menuAvatar = document.querySelector('.menu-avatar');
+        const userName = document.querySelector('.user-name');
+
+        document.querySelectorAll('.auth-dropdown').forEach(d => d.classList.remove('show'));
+
+        if (user) {
+            console.log("✅ User logged in:", user.email);
+            if(loggedOutDiv) loggedOutDiv.style.display = 'none';
+            if(loggedInDiv) loggedInDiv.style.display = 'block';
+            if(userName) userName.innerText = user.displayName || "User";
+            if(user.photoURL) {
+                if(userAvatar) userAvatar.src = user.photoURL;
+                if(menuAvatar) menuAvatar.src = user.photoURL;
+            }
+            
+            // Wait for DOM
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', () => window.loadContinueWatching());
+            } else {
+                window.loadContinueWatching();
+            }
+        } else {
+            console.log("ℹ️ No user logged in");
+            if(loggedInDiv) loggedInDiv.style.display = 'none';
+            if(loggedOutDiv) loggedOutDiv.style.display = 'block';
+            
+            const historyRow = document.getElementById('continue-watching-row');
+            if(historyRow) historyRow.style.display = 'none';
         }
-    })
-    .catch((error) => {
-        // IF THIS ALERT SHOWS, WE KNOW THE ERROR
-        alert("LOGIN ERROR: " + error.message);
     });
+}
 
-/* === 5. LOGIN ACTIONS === */
+// 5. LOGIN FUNCTIONS
 window.loginGoogle = () => {
-    // Redirects the whole page (Best for Mobile)
-    signInWithRedirect(auth, googleProvider);
+    const provider = new GoogleAuthProvider();
+    signInWithRedirect(auth, provider);
 };
 
 window.loginGithub = () => {
-    signInWithRedirect(auth, githubProvider);
+    const provider = new GithubAuthProvider();
+    signInWithRedirect(auth, provider);
 };
 
 window.doLogout = async () => {
     try {
         await signOut(auth);
-        localStorage.setItem('isLoggedIn', 'false');
-        alert("Logged out successfully");
+        console.log("✅ Logout successful");
         location.reload(); 
     } catch (error) {
-        alert("Logout Error: " + error.message);
+        console.error("❌ Logout error:", error);
     }
 };
 
-/* === 6. WATCH HISTORY LOGIC (Same as before) === */
-window.saveWatchProgress = async (item, season = null, episode = null) => {
-    const user = auth.currentUser;
-    if (!user) return; 
-
-    try {
-        const historyRef = doc(db, "users", user.uid, "history", item.id.toString());
-        await setDoc(historyRef, {
-            id: item.id,
-            title: item.title || item.name,
-            poster_path: item.poster_path,
-            backdrop_path: item.backdrop_path,
-            media_type: item.media_type || 'movie',
-            season: season,
-            episode: episode,
-            timestamp: new Date()
-        });
-        window.loadContinueWatching();
-    } catch (error) {
-        console.error("Failed to save history:", error);
-    }
-};
-
-window.loadContinueWatching = async () => {
-    const user = auth.currentUser;
-    const row = document.getElementById('continue-watching-row');
-    const list = document.getElementById('continue-list');
-
-    if (!user || !row || !list) {
-        if(row) row.style.display = 'none';
-        return;
-    }
-
-    try {
-        const historyRef = collection(db, "users", user.uid, "history");
-        const q = query(historyRef, orderBy("timestamp", "desc"), limit(10));
-        const querySnapshot = await getDocs(q);
-
-        if (querySnapshot.empty) {
-            row.style.display = 'none';
-            return;
-        }
-
-        list.innerHTML = '';
-        querySnapshot.forEach((doc) => {
-            const data = doc.data();
-            const card = document.createElement('div');
-            card.className = 'movie-card';
-            let label = "Movie";
-            if (data.season && data.episode) label = `S${data.season} : E${data.episode}`;
-
-            card.onclick = () => {
-                const item = {
-                    id: data.id,
-                    title: data.title,
-                    name: data.title, 
-                    poster_path: data.poster_path,
-                    backdrop_path: data.backdrop_path,
-                    media_type: data.media_type,
-                    first_air_date: data.media_type === 'tv' ? '2020-01-01' : null
-                };
-                window.showDetailView(item);
-                if(data.season && data.episode) {
-                   setTimeout(() => {
-                       const sSelect = document.getElementById('season-select');
-                       if(sSelect) {
-                           sSelect.value = data.season;
-                           if(typeof window.onSeasonChange === 'function') window.onSeasonChange();
-                           setTimeout(() => {
-                               if(typeof window.changeDetailServer === 'function') window.changeDetailServer(data.season, data.episode);
-                           }, 500);
-                       }
-                   }, 1000);
-                }
-            };
-
-            card.innerHTML = `
-                <div class="coming-label" style="background: #e50914;">${label}</div>
-                <img src="https://image.tmdb.org/t/p/w300${data.poster_path}">
-                <div class="card-title">${data.title}</div>
-            `;
-            list.appendChild(card);
-        });
-        row.style.display = 'block';
-    } catch (error) {
-        console.error("Error loading history:", error);
-    }
-};
-
-/* === 7. UI STATE MANAGER === */
-onAuthStateChanged(auth, (user) => {
-    const loggedOutDiv = document.getElementById('logged-out-state');
-    const loggedInDiv = document.getElementById('logged-in-state');
-    const userAvatar = document.querySelector('.nav-avatar');
-    const menuAvatar = document.querySelector('.menu-avatar');
-    const userName = document.querySelector('.user-name');
-
-    document.querySelectorAll('.auth-dropdown').forEach(d => d.classList.remove('show'));
-
-    if (user) {
-        // --- LOGGED IN ---
-        localStorage.setItem('isLoggedIn', 'true');
-        
-        if(loggedOutDiv) loggedOutDiv.style.display = 'none';
-        if(loggedInDiv) loggedInDiv.style.display = 'block';
-        if(userName) userName.innerText = user.displayName || "User";
-        if(user.photoURL) {
-            if(userAvatar) userAvatar.src = user.photoURL;
-            if(menuAvatar) menuAvatar.src = user.photoURL;
-        }
-        window.loadContinueWatching();
-    } else {
-        // --- LOGGED OUT ---
-        localStorage.setItem('isLoggedIn', 'false');
-        if(loggedInDiv) loggedInDiv.style.display = 'none';
-        if(loggedOutDiv) loggedOutDiv.style.display = 'block';
-        
-        const historyRow = document.getElementById('continue-watching-row');
-        if(historyRow) historyRow.style.display = 'none';
-    }
-});
-
-/* === 8. HELPERS === */
-window.toggleAuthDropdown = (type) => {
-    const loginDrop = document.getElementById('login-dropdown');
-    const profileDrop = document.getElementById('profile-dropdown');
-    if (type === 'login') {
-        loginDrop.classList.toggle('show');
-        if(profileDrop) profileDrop.classList.remove('show');
-    } else if (type === 'profile') {
-        profileDrop.classList.toggle('show');
-        if(loginDrop) loginDrop.classList.remove('show');
-    }
-};
+// ... rest of your code ...
