@@ -29,7 +29,32 @@ const CutieLoader = {
 };
 
 /* =========================================
-   2. LIVE TV LOGIC
+   2. VIEW CONTROLLER
+   ========================================= */
+function switchView(viewName) {
+    const home = document.getElementById('home-view');
+    const live = document.getElementById('live-view');
+    const sidebar = document.getElementById('main-sidebar');
+    const overlay = document.getElementById('overlay');
+    
+    if(viewName === 'live') {
+        home.style.display = 'none';
+        live.style.display = 'flex'; 
+        if(window.innerWidth < 1024) live.style.flexDirection = 'column';
+        if(window.jwplayer) { try { jwplayer().resize(); } catch(e){} }
+    } else {
+        home.style.display = 'block';
+        live.style.display = 'none';
+        if(window.jwplayer) { try { jwplayer().stop(); } catch(e){} }
+    }
+    if(window.innerWidth < 1024) {
+        sidebar.classList.remove('open');
+        overlay.classList.remove('active');
+    }
+}
+
+/* =========================================
+   3. LIVE TV LOGIC
    ========================================= */
 const DEFAULT_CHANNEL_ID = "Kapamilya";
 let currentSearchFilter = "";
@@ -48,6 +73,7 @@ function renderChannelButtons(filter = "") {
 
     const selectedGroup = tabs[currentTabIndex];
 
+    // Anime Logic
     if (selectedGroup === "anime tagalog dubbed" && filter === "") {
         if (animeContainer) animeContainer.style.display = "block";
         list.innerHTML = ""; 
@@ -71,6 +97,7 @@ function renderChannelButtons(filter = "") {
         if (animeContainer) animeContainer.style.display = "none";
     }
 
+    // Standard Channel Logic
     list.innerHTML = "";
     let shownCount = 0;
     
@@ -106,8 +133,12 @@ function renderChannelButtons(filter = "") {
 
     document.getElementById("channelCountText").innerText = `${shownCount} Channels`;
     
+    // Manage Clear Button Visibility
     const clearWrapper = document.getElementById('clearFavWrapper');
-    if (clearWrapper) clearWrapper.style.display = (selectedGroup === "favorites" && shownCount > 0) ? "block" : "none";
+    if (clearWrapper) {
+        // Show only if in "Favorites" tab and there are items
+        clearWrapper.style.display = (selectedGroup === "favorites" && shownCount > 0) ? "block" : "none";
+    }
 }
 
 function renderAnimeEpisodes(episodes) {
@@ -143,7 +174,6 @@ function loadChannel(key) {
     localStorage.setItem("lastPlayedChannel", key);
 
     document.querySelectorAll(".channel-button").forEach(btn => btn.classList.remove("active"));
-    
     const buttons = document.querySelectorAll(".channel-button");
     buttons.forEach(b => {
        if(b.querySelector('.channel-name')?.innerText === channel.name) b.classList.add('active');
@@ -191,17 +221,11 @@ function saveFavoritesToStorage() {
     localStorage.setItem("favoriteChannels", JSON.stringify(favorites));
 }
 
-// --- LIVE SEARCH LOGIC (NEW) ---
+// Live Search
 window.filterChannels = function() {
     const query = document.getElementById('live-search-input').value;
     const clearBtn = document.getElementById('live-clear-btn');
-    
-    if (query.trim().length > 0) {
-        clearBtn.style.display = 'block';
-    } else {
-        clearBtn.style.display = 'none';
-    }
-    
+    clearBtn.style.display = query.trim().length > 0 ? 'block' : 'none';
     renderChannelButtons(query);
 };
 
@@ -210,7 +234,7 @@ window.clearLiveSearch = function() {
     filterChannels();
 };
 
-// --- CATEGORY TABS ---
+// Category Tabs
 function setupCategoryTabs() {
     const desktopBar = document.querySelector(".category-bar");
     const mobileList = document.getElementById("mobileCategoryList");
@@ -243,10 +267,8 @@ function handleTabClick(index, tabName) {
     currentTabIndex = index;
     document.querySelectorAll('.category-button').forEach((b, i) => b.classList.toggle('active', i === index));
     document.querySelectorAll('.mobile-cat-option').forEach((b, i) => b.classList.toggle('active', i === index));
-    
     const mobBtn = document.getElementById('mobileCategoryBtn');
     if(mobBtn) mobBtn.querySelector('span').textContent = tabName.toUpperCase();
-    
     renderChannelButtons(currentSearchFilter);
 }
 
@@ -254,6 +276,29 @@ function handleTabClick(index, tabName) {
    3. HOME PAGE LOGIC (Movies)
    ========================================= */
 let currentSlideIndex = 0;
+
+/* --- GLOBAL SKELETON LOADER --- */
+function showGlobalSkeletons() {
+    const sliderTrack = document.getElementById('slider-track');
+    if (sliderTrack) {
+        sliderTrack.innerHTML = '<div class="skeleton-slide"></div>';
+    }
+
+    const lists = [
+        'latest-list', 'kdrama-list', 'cdrama-list', 'movies-list', 'tvshows-list', 'anime-list', 'upcoming-list'
+    ];
+
+    const skeletonCardsHTML = `
+        <div class="skeleton-card"></div><div class="skeleton-card"></div>
+        <div class="skeleton-card"></div><div class="skeleton-card"></div>
+        <div class="skeleton-card"></div><div class="skeleton-card"></div>
+    `;
+
+    lists.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.innerHTML = skeletonCardsHTML;
+    });
+}
 
 async function fetchData(endpoint, page = 1) {
     try {
@@ -265,6 +310,8 @@ async function fetchData(endpoint, page = 1) {
 }
 
 async function initMovies() {
+    showGlobalSkeletons(); // Show loading animation
+
     try {
         const [latest, kdrama, cdrama, anime, movies, tv, upcoming] = await Promise.all([
             fetchData('/tv/on_the_air?sort_by=popularity.desc'),
@@ -284,7 +331,6 @@ async function initMovies() {
         displayList(tv.results, 'tvshows-list');
         displayList(anime.results, 'anime-list');
         
-        // Upcoming with dates
         if (upcoming && upcoming.results) {
             displayUpcomingList(upcoming.results, 'upcoming-list');
         }
@@ -315,32 +361,24 @@ function displayUpcomingList(items, containerId) {
     const container = document.getElementById(containerId);
     if (!container) return;
     container.innerHTML = '';
-    
     const today = new Date();
-    // Filter out old dates
     const futureItems = items.filter(item => {
         if (!item.release_date) return false;
-        const releaseDate = new Date(item.release_date);
-        return releaseDate >= today;
+        return new Date(item.release_date) >= today;
     });
-
     futureItems.sort((a, b) => new Date(a.release_date) - new Date(b.release_date));
 
     if (futureItems.length === 0) {
-        container.innerHTML = '<p style="color:#888; font-size:0.9rem; margin:10px;">No upcoming releases found.</p>';
+        container.innerHTML = '<p style="color:#888; font-size:0.9rem;">No upcoming releases.</p>';
         return;
     }
 
     futureItems.forEach(item => {
         if(!item.poster_path) return;
-        
-        const dateObj = new Date(item.release_date);
-        const dateStr = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-        
+        const dateStr = new Date(item.release_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
         const card = document.createElement('div');
         card.className = 'movie-card focusable-element';
         card.onclick = () => showDetailView(item);
-        
         card.innerHTML = `
             <div class="coming-label">Coming ${dateStr}</div>
             <img src="${POSTER_URL}${item.poster_path}" loading="lazy">
@@ -394,7 +432,6 @@ window.openCategory = function(type, title) {
     view.style.display = 'flex';
     
     let endpoint = '';
-    
     if(type === 'airing_today') endpoint = '/tv/airing_today';
     else if(type === 'upcoming') endpoint = '/movie/upcoming';
     else if(type === 'kdrama') endpoint = '/discover/tv?with_original_language=ko&with_origin_country=KR&sort_by=popularity.desc';
@@ -408,7 +445,6 @@ window.openCategory = function(type, title) {
     categoryState.page = 1;
     categoryState.hasMore = true;
     categoryState.isLoading = false;
-    
     loadMoreCategoryResults();
     
     document.getElementById('category-content').onscroll = handleCategoryScroll;
@@ -477,7 +513,7 @@ async function showDetailView(item) {
     const favBtn = document.querySelector('.action-item');
     if(favBtn) favBtn.classList.remove('active');
 
-    /* === FIX: Explicitly set media_type to TV or Movie === */
+    // FIX: Set Media Type correctly
     const isTv = item.media_type === 'tv' || item.first_air_date || (item.name && !item.title);
     currentItem.media_type = isTv ? 'tv' : 'movie'; 
     
@@ -500,7 +536,6 @@ async function showDetailView(item) {
 }
 
 function closeDetailView() {
-    // Attempt to save history (Auth logic handled safely by auth.js)
     if (currentItem && typeof window.saveWatchProgress === 'function') {
         const type = currentItem.media_type;
         const seasonToSave = type === 'tv' ? currentSeason : null;
@@ -520,7 +555,7 @@ function changeDetailServer(season = 1, episode = 1) {
     
     const server = document.getElementById('detail-server').value;
     const id = currentItem.id;
-    const type = currentItem.media_type; // Uses the forced type
+    const type = currentItem.media_type; 
     let url = '';
 
     if(server === 'vidsrc.to') {
@@ -547,7 +582,6 @@ function changeDetailServer(season = 1, episode = 1) {
 
     document.getElementById('detail-video').src = url;
     
-    // Auto-save logic
     if (typeof window.saveWatchProgress === 'function') {
         window.saveWatchProgress(currentItem, type === 'tv' ? season : null, type === 'tv' ? episode : null);
     }
@@ -632,12 +666,10 @@ window.shareContent = function() {
 window.downloadContent = function() {
     if(!currentItem) return;
     const title = currentItem.title || currentItem.name || "Movie";
-    // Shortener Logic
     const SHORTENER_API_KEY = '141b190d3ff71530ac5b9150eedb1339c2e6a369';
     const SHORTENER_BASE_URL = 'https://shortxlinks.com/api';
     const targetUrl = `https://www.google.com/search?q=download+${encodeURIComponent(title)}+free`;
     const finalLink = `${SHORTENER_BASE_URL}?api=${SHORTENER_API_KEY}&url=${encodeURIComponent(targetUrl)}`;
-    
     window.open(finalLink, '_blank');
 };
 
@@ -829,9 +861,8 @@ window.searchTMDB = async function() {
 
 
 /* =========================================
-   7. AUTHENTICATION & UI INTERACTIONS
+   7. UI INTERACTIONS
    ========================================= */
-
 function checkLoginState() {
     const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
     const loggedOutDiv = document.getElementById('logged-out-state');
@@ -910,6 +941,20 @@ function setupTvRemoteLogic() {
 document.addEventListener('DOMContentLoaded', () => {
     CutieLoader.show();
     
+    // --- CLEAR FAVORITES BUTTON LOGIC ---
+    const clearFavBtn = document.getElementById('clearFavoritesBtn');
+    if(clearFavBtn) {
+        clearFavBtn.onclick = () => {
+            if(confirm("Are you sure you want to clear all favorites?")) {
+                localStorage.removeItem("favoriteChannels");
+                if(typeof channels !== 'undefined') {
+                    Object.values(channels).forEach(ch => ch.favorite = false);
+                }
+                renderChannelButtons(); 
+            }
+        };
+    }
+
     setupCategoryTabs();
     initMovies();
     setupTvRemoteLogic(); 
