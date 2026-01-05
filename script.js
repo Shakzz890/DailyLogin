@@ -497,9 +497,9 @@ async function showDetailView(item) {
     changeDetailServer(1, 1);
 }
 
-// FIX: REMOVED "auth" CHECK
+// === FIX: Removed 'auth' check so it doesn't crash! ===
 function closeDetailView() {
-    // SAVE WATCH PROGRESS (SAFE CALL)
+    // We just try to call the save function. If auth.js isn't ready or logged out, it handles itself.
     if (currentItem && typeof window.saveWatchProgress === 'function') {
         const type = currentItem.media_type === 'movie' || !currentItem.first_air_date ? 'movie' : 'tv';
         const seasonToSave = type === 'tv' ? currentSeason : null;
@@ -508,11 +508,11 @@ function closeDetailView() {
         window.saveWatchProgress(currentItem, seasonToSave, episodeToSave);
     }
     
+    // This line will now run successfully!
     document.getElementById('detail-view').style.display = 'none';
     document.getElementById('detail-video').src = '';
 }
 
-// FIX: REMOVED "auth" CHECK
 function changeDetailServer(season = 1, episode = 1) {
     if(!currentItem) return;
     
@@ -549,7 +549,7 @@ function changeDetailServer(season = 1, episode = 1) {
 
     document.getElementById('detail-video').src = url;
     
-    // AUTO-SAVE (SAFE CALL)
+    // Safe Auto-Save
     if (typeof window.saveWatchProgress === 'function') {
         const type = currentItem.media_type === 'movie' || !currentItem.first_air_date ? 'movie' : 'tv';
         const seasonToSave = type === 'tv' ? season : null;
