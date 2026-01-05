@@ -1,3 +1,5 @@
+/* script.js */
+
 /* =========================================
    1. UTILS & CONFIG
    ========================================= */
@@ -6,7 +8,6 @@ const BASE_URL = 'https://api.themoviedb.org/3';
 const IMG_URL = 'https://image.tmdb.org/t/p/original';
 const POSTER_URL = 'https://image.tmdb.org/t/p/w300';
 
-// Global Playback State
 let currentSeason = 1;
 let currentEpisode = 1;
 
@@ -73,7 +74,6 @@ function renderChannelButtons(filter = "") {
 
     const selectedGroup = tabs[currentTabIndex];
 
-    // Anime Logic
     if (selectedGroup === "anime tagalog dubbed" && filter === "") {
         if (animeContainer) animeContainer.style.display = "block";
         list.innerHTML = ""; 
@@ -97,7 +97,6 @@ function renderChannelButtons(filter = "") {
         if (animeContainer) animeContainer.style.display = "none";
     }
 
-    // Standard Channel Logic
     list.innerHTML = "";
     let shownCount = 0;
     
@@ -133,10 +132,8 @@ function renderChannelButtons(filter = "") {
 
     document.getElementById("channelCountText").innerText = `${shownCount} Channels`;
     
-    // Manage Clear Button Visibility
     const clearWrapper = document.getElementById('clearFavWrapper');
     if (clearWrapper) {
-        // Show only if in "Favorites" tab and there are items
         clearWrapper.style.display = (selectedGroup === "favorites" && shownCount > 0) ? "block" : "none";
     }
 }
@@ -221,7 +218,6 @@ function saveFavoritesToStorage() {
     localStorage.setItem("favoriteChannels", JSON.stringify(favorites));
 }
 
-// Live Search
 window.filterChannels = function() {
     const query = document.getElementById('live-search-input').value;
     const clearBtn = document.getElementById('live-clear-btn');
@@ -234,7 +230,6 @@ window.clearLiveSearch = function() {
     filterChannels();
 };
 
-// Category Tabs
 function setupCategoryTabs() {
     const desktopBar = document.querySelector(".category-bar");
     const mobileList = document.getElementById("mobileCategoryList");
@@ -277,7 +272,6 @@ function handleTabClick(index, tabName) {
    ========================================= */
 let currentSlideIndex = 0;
 
-/* --- GLOBAL SKELETON LOADER (UPDATED) --- */
 function showGlobalSkeletons() {
     const sliderTrack = document.getElementById('slider-track');
     if (sliderTrack) {
@@ -288,7 +282,6 @@ function showGlobalSkeletons() {
         'latest-list', 'kdrama-list', 'cdrama-list', 'movies-list', 'tvshows-list', 'anime-list', 'upcoming-list'
     ];
 
-    // Generate 10 skeleton cards so it fills the screen
     const skeletonCardsHTML = `
         <div class="skeleton-card skeleton-shimmer"></div>
         <div class="skeleton-card skeleton-shimmer"></div>
@@ -321,8 +314,6 @@ async function fetchData(endpoint, page = 1) {
 }
 
 async function initMovies() {
-    showGlobalSkeletons(); // <-- RUNS FIRST
-
     try {
         const [latest, kdrama, cdrama, anime, movies, tv, upcoming] = await Promise.all([
             fetchData('/tv/on_the_air?sort_by=popularity.desc'),
@@ -356,7 +347,6 @@ function displayList(items, containerId) {
     items.forEach(item => {
         if(!item.poster_path) return;
         const card = document.createElement('div');
-        // ADDED: 'fade-in' class for smooth transition
         card.className = 'movie-card focusable-element fade-in';
         card.setAttribute("tabindex", "0");
         card.onclick = () => showDetailView(item);
@@ -389,7 +379,6 @@ function displayUpcomingList(items, containerId) {
         if(!item.poster_path) return;
         const dateStr = new Date(item.release_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
         const card = document.createElement('div');
-        // ADDED: 'fade-in' class for smooth transition
         card.className = 'movie-card focusable-element fade-in';
         card.onclick = () => showDetailView(item);
         card.innerHTML = `
@@ -409,7 +398,6 @@ function initSlider(items) {
     
     items.slice(0, 5).forEach((item, index) => {
         const slide = document.createElement('div');
-        // ADDED: 'fade-in' class
         slide.className = 'slide fade-in';
         slide.style.backgroundImage = `url(${IMG_URL}${item.backdrop_path})`;
         slide.innerHTML = `<div class="slide-content"><h1>${item.title || item.name}</h1></div>`;
@@ -527,7 +515,6 @@ async function showDetailView(item) {
     const favBtn = document.querySelector('.action-item');
     if(favBtn) favBtn.classList.remove('active');
 
-    // FIX: Set Media Type correctly
     const isTv = item.media_type === 'tv' || item.first_air_date || (item.name && !item.title);
     currentItem.media_type = isTv ? 'tv' : 'movie'; 
     
@@ -706,7 +693,6 @@ const CATEGORY_ENDPOINTS = {
     'cdrama': '/discover/tv?with_original_language=zh&with_origin_country=CN&sort_by=popularity.desc'
 };
 
-// Open Modal
 window.openSearchModal = () => {
     document.getElementById('search-modal').style.display = 'flex';
     const input = document.getElementById('search-input');
@@ -724,14 +710,12 @@ window.closeSearchModal = () => {
     document.getElementById('search-modal').style.display = 'none';
 };
 
-// Handle Input Typing
 window.handleSearchInput = () => {
     const query = document.getElementById('search-input').value;
     toggleClearButton(query);
     searchTMDB();
 };
 
-// Clear Text & Reset
 window.clearSearchInput = () => {
     const input = document.getElementById('search-input');
     input.value = '';
@@ -740,7 +724,6 @@ window.clearSearchInput = () => {
     resetBrowseState(browseState.category); 
 };
 
-// Toggle Clear Button Visibility
 function toggleClearButton(query) {
     const btn = document.querySelector('.search-clear-btn');
     if (query && query.length > 0) {
@@ -750,7 +733,6 @@ function toggleClearButton(query) {
     }
 }
 
-// Switch Filter Logic
 window.setSearchFilter = function(type, btn) {
     document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
     btn.classList.add('active');
@@ -764,7 +746,6 @@ window.setSearchFilter = function(type, btn) {
     }
 };
 
-// Reset State & Load First Page
 async function resetBrowseState(category) {
     browseState.category = category;
     browseState.page = 1;
@@ -781,7 +762,6 @@ async function resetBrowseState(category) {
     await loadMoreBrowseResults();
 }
 
-// Fetch & Append Results
 async function loadMoreBrowseResults() {
     if (browseState.isLoading || !browseState.hasMore) return;
     browseState.isLoading = true;
@@ -836,7 +816,6 @@ function renderBrowseResults(items) {
     });
 }
 
-// Search TMDB (Text Input)
 window.searchTMDB = async function() {
     const query = document.getElementById('search-input').value;
     const heading = document.getElementById('search-heading');
@@ -873,7 +852,6 @@ window.searchTMDB = async function() {
     } catch(e) { console.error(e); }
 };
 
-
 /* =========================================
    7. UI INTERACTIONS
    ========================================= */
@@ -901,7 +879,6 @@ window.toggleSidebar = function() {
     document.getElementById('overlay').classList.toggle('active');
 };
 
-// Close dropdowns on click outside
 window.addEventListener('click', function(e) {
     const authWrapper = document.querySelector('.auth-wrapper');
     if (authWrapper && !authWrapper.contains(e.target)) {
@@ -951,37 +928,19 @@ function setupTvRemoteLogic() {
     });
 }
 
-// --- INITIALIZATION ---
 document.addEventListener('DOMContentLoaded', () => {
     CutieLoader.show();
     
-    // --- CLEAR FAVORITES BUTTON LOGIC ---
-    const clearFavBtn = document.getElementById('clearFavoritesBtn');
-    if(clearFavBtn) {
-        clearFavBtn.onclick = () => {
-            if(confirm("Are you sure you want to clear all favorites?")) {
-                localStorage.removeItem("favoriteChannels");
-                if(typeof channels !== 'undefined') {
-                    Object.values(channels).forEach(ch => ch.favorite = false);
-                }
-                renderChannelButtons(); 
-            }
-        };
-    }
-
     setupCategoryTabs();
-    initMovies();
-    setupTvRemoteLogic(); 
-    checkLoginState();
+    setupTvRemoteLogic();
+    checkLoginState(); 
     
     if (typeof channels !== 'undefined') {
         sortedChannels = Object.entries(channels).sort((a, b) => a[1].name.localeCompare(b[1].name));
         loadFavoritesFromStorage();
-        
         const lastPlayed = localStorage.getItem("lastPlayedChannel");
         if (lastPlayed && channels[lastPlayed]) currentChannelKey = lastPlayed;
         else currentChannelKey = sortedChannels[0]?.[0] || "";
-        
         renderChannelButtons();
         if(currentChannelKey) loadChannel(currentChannelKey);
     }
@@ -993,5 +952,15 @@ document.addEventListener('DOMContentLoaded', () => {
         if(clear) clear.onclick = () => { searchInput.value = ""; renderChannelButtons(""); };
     }
 
-    setTimeout(() => CutieLoader.hide(), 1000);
+    setTimeout(() => {
+        
+        showGlobalSkeletons(); 
+
+        CutieLoader.hide();
+
+        setTimeout(() => {
+            initMovies(); 
+        }, 100);
+
+    }, 2500); 
 });
