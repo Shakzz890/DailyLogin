@@ -813,30 +813,12 @@ window.searchTMDB = async function() {
 
 
 /* =========================================
-   7. AUTHENTICATION & UI INTERACTIONS
+   7. UI INTERACTIONS (Auth handled in auth.js)
    ========================================= */
-window.toggleAuthDropdown = function(type) {
-    const loginDrop = document.getElementById('login-dropdown');
-    const profileDrop = document.getElementById('profile-dropdown');
-    
-    if (type === 'login') {
-        loginDrop.classList.toggle('show');
-    } else if (type === 'profile') {
-        profileDrop.classList.toggle('show');
-    }
-};
 
-window.mockLogin = function(provider) {
-    alert(`Signing in with ${provider}... (Mock)`);
-    localStorage.setItem('isLoggedIn', 'true');
-    checkLoginState();
-};
+// NOTE: toggleAuthDropdown, loginGoogle, loginGithub, doLogout are in auth.js now.
 
-window.doLogout = function() {
-    localStorage.setItem('isLoggedIn', 'false');
-    checkLoginState();
-};
-
+// This function prevents UI flickering by checking LocalStorage before Firebase loads
 function checkLoginState() {
     const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
     const loggedOutDiv = document.getElementById('logged-out-state');
@@ -852,6 +834,7 @@ function checkLoginState() {
         if(loggedInDiv) loggedInDiv.style.display = 'none';
     }
     
+    // Reset dropdowns
     if(loginDrop) loginDrop.classList.remove('show');
     if(profileDrop) profileDrop.classList.remove('show');
 }

@@ -63,12 +63,19 @@
                     <i class="fa-regular fa-user"></i> <span>Sign In</span>
                 </button>
                 <div class="auth-dropdown" id="login-dropdown">
-                    <div class="dropdown-header">Sign in now to save your watch history.</div>
-                    <div class="social-item" onclick="mockLogin('Google')"><i class="fa-brands fa-google" style="color:#DB4437;"></i> Google</div>
-                    <div class="social-item" onclick="mockLogin('Facebook')"><i class="fa-brands fa-facebook" style="color:#4267B2;"></i> Facebook</div>
-                    <div class="social-item" onclick="mockLogin('Yahoo')"><i class="fa-brands fa-yahoo" style="color:#410093;"></i> Yahoo</div>
-                    <div class="social-item" onclick="mockLogin('Microsoft')"><i class="fa-brands fa-microsoft" style="color:#00A4EF;"></i> Microsoft</div>
-                    <div class="social-item" onclick="mockLogin('Github')"><i class="fa-brands fa-github" style="color:#fff;"></i> Github</div>
+                    <div class="dropdown-header">Sign in to save your watch history.</div>
+                    
+                    <div class="social-item" onclick="loginGoogle()">
+                        <i class="fa-brands fa-google" style="color:#DB4437;"></i> Google
+                    </div>
+                    <div class="social-item" onclick="loginGithub()">
+                        <i class="fa-brands fa-github" style="color:#fff;"></i> Github
+                    </div>
+
+                    <div style="border-top: 1px solid #333; margin: 5px 0;"></div>
+                    <div class="dropdown-footer" style="font-size: 0.8rem; color: #aaa; text-align: center; padding: 5px;">
+                        More coming soon...
+                    </div>
                 </div>
             </div>
 
@@ -78,7 +85,7 @@
                     <div class="user-info-box">
                         <img src="https://i.pinimg.com/736x/8b/16/7a/8b167af653c2399dd93b952a48740620.jpg" class="menu-avatar">
                         <div class="user-text">
-                            <span class="user-name">Rizwen Obedoza</span>
+                            <span class="user-name">User</span>
                         </div>
                     </div>
                     <div class="dropdown-divider"></div>
@@ -188,7 +195,7 @@
                    <option value="vidsrc.xyz">Server 7 (XYZ)</option>
                    <option value="vidsrc.vip">Server 8 (VIP)</option>
                    <option value="vidsrc.net">Server 9 (Net)</option>
-     </select>
+               </select>
           </div>
           <div class="action-bar">
               <div class="action-item" onclick="toggleDetailFavorite(this)"><i class="fa-regular fa-heart"></i><span>Favorite</span></div>
@@ -258,6 +265,7 @@
 
   <script src="channels.js"></script>
   <script src="script.js"></script>
+  <script type="module" src="auth.js"></script>
 
   <script>
       function switchView(viewName) {
