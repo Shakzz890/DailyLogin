@@ -2,8 +2,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { 
     getAuth, 
-    signInWithRedirect, // <--- CHANGED FROM POPUP
-    getRedirectResult,  // <--- NEW: Checks login after coming back
+    signInWithPopup, 
     signOut, 
     onAuthStateChanged, 
     GoogleAuthProvider, 
@@ -20,7 +19,7 @@ import {
     getDocs 
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-// === PASTE YOUR FIREBASE CONFIG HERE ===
+/* === 1. FIREBASE CONFIGURATION === */
 const firebaseConfig = {
     apiKey: "AIzaSyBh2QAytkv2e27oCRaMgVdYTru7lSS8Ffo",
     authDomain: "shakzz-tv.firebaseapp.com",
@@ -32,51 +31,61 @@ const firebaseConfig = {
     measurementId: "G-Y9BSQ0NT4H"
 };
 
+/* === 2. INITIALIZE SERVICES === */
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
-const db = getFirestore(app);
+const db = getFirestore(app); // Database service
+
 const googleProvider = new GoogleAuthProvider();
 const githubProvider = new GithubAuthProvider();
 
-/* === 1. CHECK LOGIN AFTER REDIRECT === */
-// When the page reloads after Google login, this runs:
-getRedirectResult(auth)
-    .then((result) => {
-        if (result) {
-            console.log("Login Success:", result.user);
+/* === 3. AUTH ACTIONS === */
+
+// Google Login
+window.loginGoogle = async () => {
+    try {
+        await signInWithPopup(auth, googleProvider);
+        // UI updates automatically via onAuthStateChanged
+    } catch (error) {
+        alert("Google Login Error: " + error.message);
+    }
+};
+
+// GitHub Login
+window.loginGithub = async () => {
+    try {
+        await signInWithPopup(auth, githubProvider);
+    } catch (error) {
+        if (error.code === 'auth/account-exists-with-different-credential') {
+            alert("This email is already linked to another provider (like Google).");
+        } else {
+            alert("GitHub Login Error: " + error.message);
         }
-    })
-    .catch((error) => {
-        console.error("Login Error:", error);
-    });
-
-/* === 2. LOGIN ACTIONS (Mobile Friendly) === */
-window.loginGoogle = () => {
-    // This will redirect the page to Google
-    signInWithRedirect(auth, googleProvider);
+    }
 };
 
-window.loginGithub = () => {
-    signInWithRedirect(auth, githubProvider);
-};
-
+// Logout
 window.doLogout = async () => {
     try {
         await signOut(auth);
         localStorage.setItem('isLoggedIn', 'false');
-        location.reload();
+        location.reload(); // Reloads page to clear the "Continue Watching" row immediately
     } catch (error) {
         console.error("Logout Error:", error);
     }
 };
 
-/* === 3. WATCH HISTORY LOGIC === */
+/* === 4. WATCH HISTORY LOGIC === */
+
+// Save Movie/Episode Progress
 window.saveWatchProgress = async (item, season = null, episode = null) => {
     const user = auth.currentUser;
-    if (!user) return; // If guest, STOP here.
+    if (!user) return; // Ignore if guest
 
     try {
+        // Create a reference to where this movie is saved
         const historyRef = doc(db, "users", user.uid, "history", item.id.toString());
+        
         await setDoc(historyRef, {
             id: item.id,
             title: item.title || item.name,
@@ -85,25 +94,30 @@ window.saveWatchProgress = async (item, season = null, episode = null) => {
             media_type: item.media_type || 'movie',
             season: season,
             episode: episode,
-            timestamp: new Date()
+            timestamp: new Date() // Saves the exact time
         });
+        
+        // Refresh the list immediately so they see it
         window.loadContinueWatching();
     } catch (error) {
         console.error("Failed to save history:", error);
     }
 };
 
+// Load "Continue Watching" List
 window.loadContinueWatching = async () => {
     const user = auth.currentUser;
     const row = document.getElementById('continue-watching-row');
     const list = document.getElementById('continue-list');
 
+    // Safety checks
     if (!user || !row || !list) {
         if(row) row.style.display = 'none';
         return;
     }
 
     try {
+        // Get top 10 most recently watched
         const historyRef = collection(db, "users", user.uid, "history");
         const q = query(historyRef, orderBy("timestamp", "desc"), limit(10));
         const querySnapshot = await getDocs(q);
@@ -113,15 +127,22 @@ window.loadContinueWatching = async () => {
             return;
         }
 
-        list.innerHTML = '';
+        list.innerHTML = ''; // Clear old list
+        
         querySnapshot.forEach((doc) => {
             const data = doc.data();
             const card = document.createElement('div');
             card.className = 'movie-card';
+            
+            // Format Label: "S1 : E4" or "Movie"
             let label = "Movie";
-            if (data.season && data.episode) label = `S${data.season} : E${data.episode}`;
+            if (data.season && data.episode) {
+                label = `S${data.season} : E${data.episode}`;
+            }
 
+            // Click to Resume
             card.onclick = () => {
+                // We recreate the item object for the player
                 const item = {
                     id: data.id,
                     title: data.title,
@@ -129,11 +150,16 @@ window.loadContinueWatching = async () => {
                     poster_path: data.poster_path,
                     backdrop_path: data.backdrop_path,
                     media_type: data.media_type,
-                    first_air_date: data.media_type === 'tv' ? '2020-01-01' : null
+                    first_air_date: data.media_type === 'tv' ? '2020-01-01' : null // Fake date to trigger TV logic
                 };
+                
+                // Open the player
                 window.showDetailView(item);
+                
+                // If it's a TV show, try to select the specific season/episode
                 if(data.season && data.episode) {
                    setTimeout(() => {
+                       // This is a "best effort" to switch the dropdowns automatically
                        const sSelect = document.getElementById('season-select');
                        if(sSelect) {
                            sSelect.value = data.season;
@@ -153,13 +179,15 @@ window.loadContinueWatching = async () => {
             `;
             list.appendChild(card);
         });
-        row.style.display = 'block';
+
+        row.style.display = 'block'; // Show the section
+
     } catch (error) {
         console.error("Error loading history:", error);
     }
 };
 
-/* === 4. UI STATE MANAGER === */
+/* === 5. UI STATE MANAGER === */
 onAuthStateChanged(auth, (user) => {
     const loggedOutDiv = document.getElementById('logged-out-state');
     const loggedInDiv = document.getElementById('logged-in-state');
@@ -167,30 +195,43 @@ onAuthStateChanged(auth, (user) => {
     const menuAvatar = document.querySelector('.menu-avatar');
     const userName = document.querySelector('.user-name');
 
+    // 1. Close any open menus
     document.querySelectorAll('.auth-dropdown').forEach(d => d.classList.remove('show'));
 
     if (user) {
+        // --- USER IS LOGGED IN ---
         localStorage.setItem('isLoggedIn', 'true');
+        
         if(loggedOutDiv) loggedOutDiv.style.display = 'none';
         if(loggedInDiv) loggedInDiv.style.display = 'block';
+        
         if(userName) userName.innerText = user.displayName || "User";
         if(user.photoURL) {
             if(userAvatar) userAvatar.src = user.photoURL;
             if(menuAvatar) menuAvatar.src = user.photoURL;
         }
+
+        // Load their specific history
         window.loadContinueWatching();
+
     } else {
+        // --- USER IS LOGGED OUT ---
         localStorage.setItem('isLoggedIn', 'false');
+        
         if(loggedInDiv) loggedInDiv.style.display = 'none';
         if(loggedOutDiv) loggedOutDiv.style.display = 'block';
+
+        // Hide the history row
         const historyRow = document.getElementById('continue-watching-row');
         if(historyRow) historyRow.style.display = 'none';
     }
 });
 
+/* === 6. HELPER FUNCTIONS === */
 window.toggleAuthDropdown = (type) => {
     const loginDrop = document.getElementById('login-dropdown');
     const profileDrop = document.getElementById('profile-dropdown');
+    
     if (type === 'login') {
         loginDrop.classList.toggle('show');
         if(profileDrop) profileDrop.classList.remove('show');
