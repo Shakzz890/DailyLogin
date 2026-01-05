@@ -6,7 +6,7 @@ const BASE_URL = 'https://api.themoviedb.org/3';
 const IMG_URL = 'https://image.tmdb.org/t/p/original';
 const POSTER_URL = 'https://image.tmdb.org/t/p/w300';
 
-// NEW: Track current playback position globally
+// Track current playback position globally
 let currentSeason = 1;
 let currentEpisode = 1;
 
@@ -497,23 +497,22 @@ async function showDetailView(item) {
     changeDetailServer(1, 1);
 }
 
-// MODIFIED: Save history before closing
+// FIX: REMOVED "auth" CHECK
 function closeDetailView() {
-    // SAVE WATCH PROGRESS BEFORE CLOSING
-    if (currentItem && auth?.currentUser) {
+    // SAVE WATCH PROGRESS (SAFE CALL)
+    if (currentItem && typeof window.saveWatchProgress === 'function') {
         const type = currentItem.media_type === 'movie' || !currentItem.first_air_date ? 'movie' : 'tv';
         const seasonToSave = type === 'tv' ? currentSeason : null;
         const episodeToSave = type === 'tv' ? currentEpisode : null;
         
         window.saveWatchProgress(currentItem, seasonToSave, episodeToSave);
-        console.log("💾 Saving progress:", currentItem.title, "S:", seasonToSave, "E:", episodeToSave);
     }
     
     document.getElementById('detail-view').style.display = 'none';
     document.getElementById('detail-video').src = '';
 }
 
-// MODIFIED: Save progress when changing server/episode
+// FIX: REMOVED "auth" CHECK
 function changeDetailServer(season = 1, episode = 1) {
     if(!currentItem) return;
     
@@ -550,14 +549,13 @@ function changeDetailServer(season = 1, episode = 1) {
 
     document.getElementById('detail-video').src = url;
     
-    // AUTO-SAVE when user changes server/episode
-    if (auth?.currentUser) {
+    // AUTO-SAVE (SAFE CALL)
+    if (typeof window.saveWatchProgress === 'function') {
         const type = currentItem.media_type === 'movie' || !currentItem.first_air_date ? 'movie' : 'tv';
         const seasonToSave = type === 'tv' ? season : null;
         const episodeToSave = type === 'tv' ? episode : null;
         
         window.saveWatchProgress(currentItem, seasonToSave, episodeToSave);
-        console.log("💾 Auto-saved server change:", currentItem.title);
     }
 }
 
@@ -582,13 +580,11 @@ function populateSeasons(seasons) {
     onSeasonChange();
 }
 
-// MODIFIED: Track season changes
 function onSeasonChange() {
     currentSeason = parseInt(document.getElementById('season-select').value);
     renderEpisodes(); 
 }
 
-// MODIFIED: Track episode clicks
 function renderEpisodes() {
     const seasonSelect = document.getElementById('season-select');
     const grid = document.getElementById('episode-grid');
@@ -609,7 +605,7 @@ function renderEpisodes() {
         };
         if (i === 1) {
             box.classList.add('active');
-            currentEpisode = 1; // Set default
+            currentEpisode = 1; 
         }
         grid.appendChild(box);
     }
