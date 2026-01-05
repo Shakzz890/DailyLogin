@@ -1,15 +1,14 @@
-/* === CORRECTED AUTH.JS === */
+/* auth.js */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { 
     getAuth, 
-    signInWithRedirect, 
-    getRedirectResult, 
+    signInWithPopup, 
     signOut, 
     onAuthStateChanged, 
     GoogleAuthProvider, 
     GithubAuthProvider,
-    browserLocalPersistence,
-    setPersistence 
+    setPersistence,
+    browserLocalPersistence 
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { 
     getFirestore, 
@@ -19,10 +18,10 @@ import {
     query, 
     orderBy, 
     limit, 
-    getDocs,
-    serverTimestamp 
+    getDocs 
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
+/* === 1. FIREBASE CONFIGURATION === */
 const firebaseConfig = {
     apiKey: "AIzaSyBh2QAytkv2e27oCRaMgVdYTru7lSS8Ffo",
     authDomain: "shakzz-tv.firebaseapp.com",
@@ -34,104 +33,89 @@ const firebaseConfig = {
     measurementId: "G-Y9BSQ0NT4H"
 };
 
+/* === 2. INITIALIZE SERVICES === */
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+const googleProvider = new GoogleAuthProvider();
+const githubProvider = new GithubAuthProvider();
 
-console.log("🔥 Firebase initialized. Version: FIXED-2024");
+// FORCE PERSISTENCE (Keeps user logged in on refresh)
+setPersistence(auth, browserLocalPersistence).catch(console.error);
 
-// Forced persistence
-setPersistence(auth, browserLocalPersistence)
-    .then(() => console.log("✅ Persistence set to local"))
-    .catch((error) => console.error("❌ Persistence failed:", error));
-
-/* === AUTH STATE LISTENER === */
-onAuthStateChanged(auth, async (user) => {
-    const loggedOutDiv = document.getElementById('logged-out-state');
-    const loggedInDiv = document.getElementById('logged-in-state');
-    const userAvatar = document.querySelector('.nav-avatar');
-    const menuAvatar = document.querySelector('.menu-avatar');
-    const userName = document.querySelector('.user-name');
-
-    document.querySelectorAll('.auth-dropdown').forEach(d => d.classList.remove('show'));
-
-    if (user) {
-        console.log("✅ User logged in:", user.email);
-        if(loggedOutDiv) loggedOutDiv.style.display = 'none';
-        if(loggedInDiv) loggedInDiv.style.display = 'block';
-        if(userName) userName.innerText = user.displayName || "User";
-        if(user.photoURL) {
-            if(userAvatar) userAvatar.src = user.photoURL;
-            if(menuAvatar) menuAvatar.src = user.photoURL;
-        }
-        
-        // Load history AFTER DOM is ready
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', () => window.loadContinueWatching());
-        } else {
-            await window.loadContinueWatching();
-        }
-    } else {
-        console.log("ℹ️ User logged out");
-        if(loggedInDiv) loggedInDiv.style.display = 'none';
-        if(loggedOutDiv) loggedOutDiv.style.display = 'block';
-        
-        const historyRow = document.getElementById('continue-watching-row');
-        if(historyRow) historyRow.style.display = 'none';
+/* === 3. AUTH ACTIONS === */
+window.loginGoogle = async () => {
+    try {
+        await signInWithPopup(auth, googleProvider);
+    } catch (error) {
+        alert("Google Login Failed: " + error.message);
     }
-});
+};
 
-/* === SAVE WATCH PROGRESS (Robust Version) === */
+window.loginGithub = async () => {
+    try {
+        await signInWithPopup(auth, githubProvider);
+    } catch (error) {
+        if (error.code === 'auth/account-exists-with-different-credential') {
+            alert("Email already linked to Google. Please sign in with Google.");
+        } else {
+            alert("GitHub Login Failed: " + error.message);
+        }
+    }
+};
+
+window.doLogout = async () => {
+    try {
+        await signOut(auth);
+        localStorage.setItem('isLoggedIn', 'false');
+        location.reload(); 
+    } catch (error) {
+        console.error("Logout Error:", error);
+    }
+};
+
+/* === 4. WATCH HISTORY LOGIC === */
+
+// CALLED BY SCRIPT.JS
 window.saveWatchProgress = async (item, season = null, episode = null) => {
     const user = auth.currentUser;
-    if (!user) {
-        console.warn("⚠️ Cannot save: User not logged in");
-        return;
-    }
-    
-    // Validate data
-    if (!item?.id) {
-        console.error("❌ Missing item.id");
-        alert("Error: Cannot save - invalid movie data");
-        return;
-    }
+    if (!user) return; 
 
     try {
         const historyRef = doc(db, "users", user.uid, "history", item.id.toString());
-        await setDoc(historyRef, {
+        
+        // Prepare data matching your script.js structure
+        const data = {
             id: item.id,
             title: item.title || item.name,
             poster_path: item.poster_path,
             backdrop_path: item.backdrop_path,
             media_type: item.media_type || 'movie',
-            season: season,
-            episode: episode,
-            timestamp: serverTimestamp()
-        });
+            timestamp: new Date()
+        };
+
+        // Add Season/Ep only if they exist (for TV)
+        if (season) data.season = season;
+        if (episode) data.episode = episode;
+
+        await setDoc(historyRef, data);
         
-        console.log("✅ History saved:", item.title || item.name);
+        // Refresh the UI list immediately
+        window.loadContinueWatching();
         
-        // Force refresh the continue watching row
-        await window.loadContinueWatching();
     } catch (error) {
-        console.error("❌ Firestore Error:", error.code, error.message);
-        alert(`Failed to save: ${error.message}\n\nCheck console for error code.`);
+        console.error("Failed to save history:", error);
     }
 };
 
-/* === LOAD CONTINUE WATCHING === */
+// LOAD LIST ON HOME PAGE
 window.loadContinueWatching = async () => {
     const user = auth.currentUser;
     const row = document.getElementById('continue-watching-row');
     const list = document.getElementById('continue-list');
 
-    if (!user) {
+    if (!user || !row || !list) {
         if(row) row.style.display = 'none';
-        return;
-    }
-    
-    if (!row || !list) {
-        console.error("❌ DOM Error: Missing #continue-watching-row or #continue-list");
         return;
     }
 
@@ -146,14 +130,18 @@ window.loadContinueWatching = async () => {
         }
 
         list.innerHTML = '';
+        
         querySnapshot.forEach((doc) => {
             const data = doc.data();
             const card = document.createElement('div');
             card.className = 'movie-card';
             
             let label = "Movie";
-            if (data.season && data.episode) label = `S${data.season} : E${data.episode}`;
+            if (data.season && data.episode) {
+                label = `S${data.season}:E${data.episode}`;
+            }
 
+            // Click Handler: Re-opens the player with correct Season/Episode
             card.onclick = () => {
                 const item = {
                     id: data.id,
@@ -162,55 +150,106 @@ window.loadContinueWatching = async () => {
                     poster_path: data.poster_path,
                     backdrop_path: data.backdrop_path,
                     media_type: data.media_type,
-                    first_air_date: data.media_type === 'tv' ? '2020-01-01' : null
+                    // Fake date ensures script.js treats it as TV if needed
+                    first_air_date: data.media_type === 'tv' ? '2020-01-01' : null 
                 };
-                showDetailView(item);
                 
-                // Auto-select season/episode for TV shows
+                window.showDetailView(item);
+                
+                // If TV, auto-select the dropdowns
                 if(data.season && data.episode) {
                    setTimeout(() => {
                        const sSelect = document.getElementById('season-select');
                        if(sSelect) {
                            sSelect.value = data.season;
+                           // Trigger change to load episodes
                            if(typeof window.onSeasonChange === 'function') window.onSeasonChange();
+                           
+                           // Select specific episode after episodes load
                            setTimeout(() => {
-                               if(typeof window.changeDetailServer === 'function') window.changeDetailServer(data.season, data.episode);
+                               const epGrid = document.getElementById('episode-grid');
+                               if(epGrid) {
+                                   const eps = epGrid.children;
+                                   if(eps[data.episode - 1]) eps[data.episode - 1].click();
+                               }
                            }, 500);
                        }
-                   }, 1000);
+                   }, 800);
                 }
             };
 
-            // FIX: Remove space in image URL
             card.innerHTML = `
                 <div class="coming-label" style="background: #e50914;">${label}</div>
-                <img src="https://image.tmdb.org/t/p/w300${data.poster_path}" loading="lazy">
+                <img src="https://image.tmdb.org/t/p/w300${data.poster_path}">
                 <div class="card-title">${data.title}</div>
             `;
             list.appendChild(card);
         });
-        
         row.style.display = 'block';
-        console.log(`✅ Loaded ${querySnapshot.size} history items`);
+
     } catch (error) {
-        console.error("❌ Error loading history:", error.code, error.message);
-        alert(`Cannot load Continue Watching: ${error.message}`);
+        console.error("Error loading history:", error);
     }
 };
 
-/* === LOGIN FUNCTIONS === */
-window.loginGoogle = () => signInWithRedirect(auth, new GoogleAuthProvider());
-window.loginGithub = () => signInWithRedirect(auth, new GithubAuthProvider());
-
-window.doLogout = async () => {
-    try {
-        await signOut(auth);
-        location.reload(); 
-    } catch (error) {
-        alert("Logout Error: " + error.message);
+// === DEBUG FUNCTION FOR YOUR BUTTON ===
+window.testSaveHistory = async () => {
+    const user = auth.currentUser;
+    if (!user) {
+        alert("Please Log In first!");
+        return;
     }
+    
+    // Creates a Fake Movie entry
+    const fakeMovie = {
+        id: 550, // Fight Club ID
+        title: "Test Movie (Fight Club)",
+        poster_path: "/pB8BM7pdSp6B6Ih7QZ4DrQ3PmJK.jpg",
+        backdrop_path: "/hZkgoQYus5vegHoetLkCJzb17zJ.jpg",
+        media_type: "movie"
+    };
+
+    alert("Saving test movie...");
+    await window.saveWatchProgress(fakeMovie);
+    alert("Saved! Check the top of the home page.");
 };
 
+/* === 5. UI STATE MANAGER === */
+onAuthStateChanged(auth, (user) => {
+    const loggedOutDiv = document.getElementById('logged-out-state');
+    const loggedInDiv = document.getElementById('logged-in-state');
+    const userAvatar = document.querySelector('.nav-avatar');
+    const menuAvatar = document.querySelector('.menu-avatar');
+    const userName = document.querySelector('.user-name');
+
+    document.querySelectorAll('.auth-dropdown').forEach(d => d.classList.remove('show'));
+
+    if (user) {
+        // LOGGED IN
+        localStorage.setItem('isLoggedIn', 'true');
+        if(loggedOutDiv) loggedOutDiv.style.display = 'none';
+        if(loggedInDiv) loggedInDiv.style.display = 'block';
+        
+        if(userName) userName.innerText = user.displayName || "User";
+        if(user.photoURL) {
+            if(userAvatar) userAvatar.src = user.photoURL;
+            if(menuAvatar) menuAvatar.src = user.photoURL;
+        }
+        
+        window.loadContinueWatching();
+        
+    } else {
+        // LOGGED OUT
+        localStorage.setItem('isLoggedIn', 'false');
+        if(loggedInDiv) loggedInDiv.style.display = 'none';
+        if(loggedOutDiv) loggedOutDiv.style.display = 'block';
+        
+        const historyRow = document.getElementById('continue-watching-row');
+        if(historyRow) historyRow.style.display = 'none';
+    }
+});
+
+/* === 6. HELPERS === */
 window.toggleAuthDropdown = (type) => {
     const loginDrop = document.getElementById('login-dropdown');
     const profileDrop = document.getElementById('profile-dropdown');
@@ -221,16 +260,4 @@ window.toggleAuthDropdown = (type) => {
         profileDrop.classList.toggle('show');
         if(loginDrop) loginDrop.classList.remove('show');
     }
-};
-
-/* === TEST BUTTON (Add to HTML) === */
-window.testSaveHistory = () => {
-    const testItem = {
-        id: 550, // Fight Club
-        title: "Fight Club Test",
-        poster_path: "/pB8BM7pdSp6B6Ih7QZ4DrQ3PmJK.jpg",
-        backdrop_path: "/mMZRKY3zRz3Zi8VkhSJfSHsrCgt.jpg",
-        media_type: "movie"
-    };
-    window.saveWatchProgress(testItem);
 };
