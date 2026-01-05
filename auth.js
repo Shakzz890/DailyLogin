@@ -1,13 +1,15 @@
-/* auth.js */
+/* auth.js - DIAGNOSTIC VERSION */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { 
     getAuth, 
-    signInWithRedirect, // <--- CHANGED FROM POPUP
-    getRedirectResult,  // <--- NEW: Checks login after coming back
+    signInWithRedirect, 
+    getRedirectResult, 
     signOut, 
     onAuthStateChanged, 
     GoogleAuthProvider, 
-    GithubAuthProvider 
+    GithubAuthProvider,
+    setPersistence,
+    browserLocalPersistence 
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { 
     getFirestore, 
@@ -21,7 +23,6 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 /* === 1. FIREBASE CONFIGURATION === */
-// Replace with your keys if needed, but these match your file
 const firebaseConfig = {
     apiKey: "AIzaSyBh2QAytkv2e27oCRaMgVdYTru7lSS8Ffo",
     authDomain: "shakzz-tv.firebaseapp.com",
@@ -33,28 +34,39 @@ const firebaseConfig = {
     measurementId: "G-Y9BSQ0NT4H"
 };
 
+/* === 2. INITIALIZE SERVICES === */
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 const googleProvider = new GoogleAuthProvider();
 const githubProvider = new GithubAuthProvider();
 
-/* === 2. HANDLE REDIRECT LOGIN (NEW) === */
-// This runs when the user comes back from Google
+/* === 3. FORCE PERSISTENCE (FIX FOR MOBILE) === */
+// This tells the phone "Please remember this user forever"
+setPersistence(auth, browserLocalPersistence)
+    .then(() => {
+        console.log("Persistence set to local.");
+    })
+    .catch((error) => {
+        console.error("Persistence Error:", error);
+    });
+
+/* === 4. CHECK LOGIN STATUS (DIAGNOSTIC ALERTS) === */
 getRedirectResult(auth)
     .then((result) => {
         if (result) {
-            console.log("Login Success:", result.user);
-            // Optional: You can force a reload or UI update here if needed
+            // IF THIS ALERT SHOWS, THE LOGIN WAS SUCCESSFUL
+            alert("SUCCESS: Google sent you back! Welcome " + result.user.displayName);
         }
     })
     .catch((error) => {
-        console.error("Login Error:", error);
+        // IF THIS ALERT SHOWS, WE KNOW THE ERROR
+        alert("LOGIN ERROR: " + error.message);
     });
 
-/* === 3. AUTH ACTIONS === */
+/* === 5. LOGIN ACTIONS === */
 window.loginGoogle = () => {
-    // This will redirect the page to Google
+    // Redirects the whole page (Best for Mobile)
     signInWithRedirect(auth, googleProvider);
 };
 
@@ -66,16 +78,17 @@ window.doLogout = async () => {
     try {
         await signOut(auth);
         localStorage.setItem('isLoggedIn', 'false');
-        location.reload();
+        alert("Logged out successfully");
+        location.reload(); 
     } catch (error) {
-        console.error("Logout Error:", error);
+        alert("Logout Error: " + error.message);
     }
 };
 
-/* === 4. WATCH HISTORY LOGIC === */
+/* === 6. WATCH HISTORY LOGIC (Same as before) === */
 window.saveWatchProgress = async (item, season = null, episode = null) => {
     const user = auth.currentUser;
-    if (!user) return; // Guests don't save history
+    if (!user) return; 
 
     try {
         const historyRef = doc(db, "users", user.uid, "history", item.id.toString());
@@ -120,11 +133,8 @@ window.loadContinueWatching = async () => {
             const data = doc.data();
             const card = document.createElement('div');
             card.className = 'movie-card';
-            
             let label = "Movie";
-            if (data.season && data.episode) {
-                label = `S${data.season} : E${data.episode}`;
-            }
+            if (data.season && data.episode) label = `S${data.season} : E${data.episode}`;
 
             card.onclick = () => {
                 const item = {
@@ -136,9 +146,7 @@ window.loadContinueWatching = async () => {
                     media_type: data.media_type,
                     first_air_date: data.media_type === 'tv' ? '2020-01-01' : null
                 };
-                
                 window.showDetailView(item);
-                
                 if(data.season && data.episode) {
                    setTimeout(() => {
                        const sSelect = document.getElementById('season-select');
@@ -166,7 +174,7 @@ window.loadContinueWatching = async () => {
     }
 };
 
-/* === 5. UI STATE MANAGER === */
+/* === 7. UI STATE MANAGER === */
 onAuthStateChanged(auth, (user) => {
     const loggedOutDiv = document.getElementById('logged-out-state');
     const loggedInDiv = document.getElementById('logged-in-state');
@@ -177,7 +185,9 @@ onAuthStateChanged(auth, (user) => {
     document.querySelectorAll('.auth-dropdown').forEach(d => d.classList.remove('show'));
 
     if (user) {
+        // --- LOGGED IN ---
         localStorage.setItem('isLoggedIn', 'true');
+        
         if(loggedOutDiv) loggedOutDiv.style.display = 'none';
         if(loggedInDiv) loggedInDiv.style.display = 'block';
         if(userName) userName.innerText = user.displayName || "User";
@@ -187,6 +197,7 @@ onAuthStateChanged(auth, (user) => {
         }
         window.loadContinueWatching();
     } else {
+        // --- LOGGED OUT ---
         localStorage.setItem('isLoggedIn', 'false');
         if(loggedInDiv) loggedInDiv.style.display = 'none';
         if(loggedOutDiv) loggedOutDiv.style.display = 'block';
@@ -196,6 +207,7 @@ onAuthStateChanged(auth, (user) => {
     }
 });
 
+/* === 8. HELPERS === */
 window.toggleAuthDropdown = (type) => {
     const loginDrop = document.getElementById('login-dropdown');
     const profileDrop = document.getElementById('profile-dropdown');
