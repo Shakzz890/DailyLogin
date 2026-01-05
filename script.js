@@ -279,63 +279,49 @@ let currentSlideIndex = 0;
 
 /* --- GLOBAL SKELETON LOADER --- */
 function showGlobalSkeletons() {
+    // 1. Handle the Main Slider
     const sliderTrack = document.getElementById('slider-track');
     if (sliderTrack) {
-        sliderTrack.innerHTML = '<div class="skeleton-slide"></div>';
+        // We add class 'skeleton-shimmer' for the animation
+        sliderTrack.innerHTML = '<div class="slide skeleton-slide skeleton-shimmer"></div>';
     }
 
+    // 2. Define all the lists you want to have skeletons
     const lists = [
-        'latest-list', 'kdrama-list', 'cdrama-list', 'movies-list', 'tvshows-list', 'anime-list', 'upcoming-list'
+        'continue-list', // Included Continue Watching
+        'latest-list', 
+        'kdrama-list', 
+        'cdrama-list', 
+        'movies-list', 
+        'tvshows-list', 
+        'anime-list', 
+        'upcoming-list'
     ];
 
-    const skeletonCardsHTML = `
-        <div class="skeleton-card"></div><div class="skeleton-card"></div>
-        <div class="skeleton-card"></div><div class="skeleton-card"></div>
-        <div class="skeleton-card"></div><div class="skeleton-card"></div>
+    // 3. Create the HTML string for the cards
+    // We generate 10 skeleton cards so it fills the screen width on mobile and desktop
+    const skeletonCardHTML = `
+        <div class="skeleton-card skeleton-shimmer"></div>
+        <div class="skeleton-card skeleton-shimmer"></div>
+        <div class="skeleton-card skeleton-shimmer"></div>
+        <div class="skeleton-card skeleton-shimmer"></div>
+        <div class="skeleton-card skeleton-shimmer"></div>
+        <div class="skeleton-card skeleton-shimmer"></div>
+        <div class="skeleton-card skeleton-shimmer"></div>
+        <div class="skeleton-card skeleton-shimmer"></div>
+        <div class="skeleton-card skeleton-shimmer"></div>
+        <div class="skeleton-card skeleton-shimmer"></div>
     `;
 
+    // 4. Inject into every list
     lists.forEach(id => {
         const el = document.getElementById(id);
-        if (el) el.innerHTML = skeletonCardsHTML;
-    });
-}
-
-async function fetchData(endpoint, page = 1) {
-    try {
-        const separator = endpoint.includes('?') ? '&' : '?';
-        const url = `${BASE_URL}${endpoint}${separator}api_key=${API_KEY}&page=${page}`;
-        const res = await fetch(url);
-        return await res.json();
-    } catch (e) { return { results: [] }; }
-}
-
-async function initMovies() {
-    showGlobalSkeletons(); // Show loading animation
-
-    try {
-        const [latest, kdrama, cdrama, anime, movies, tv, upcoming] = await Promise.all([
-            fetchData('/tv/on_the_air?sort_by=popularity.desc'),
-            fetchData('/discover/tv?with_original_language=ko&with_origin_country=KR&sort_by=popularity.desc'),
-            fetchData('/discover/tv?with_original_language=zh&with_origin_country=CN&sort_by=popularity.desc'),
-            fetchData('/discover/tv?with_genres=16&with_original_language=ja&sort_by=popularity.desc'),
-            fetchData('/trending/movie/week'),
-            fetchData('/trending/tv/week'),
-            fetchData('/movie/upcoming?region=US')
-        ]);
-        
-        initSlider(movies.results);
-        displayList(latest.results, 'latest-list');
-        displayList(cdrama.results, 'cdrama-list');
-        displayList(kdrama.results, 'kdrama-list');
-        displayList(movies.results, 'movies-list');
-        displayList(tv.results, 'tvshows-list');
-        displayList(anime.results, 'anime-list');
-        
-        if (upcoming && upcoming.results) {
-            displayUpcomingList(upcoming.results, 'upcoming-list');
+        if (el) {
+            el.innerHTML = skeletonCardHTML;
+            // Force the container to be visible during loading so the user sees the skeletons
+            el.parentElement.style.display = 'block'; 
         }
-        
-    } catch (e) { console.error(e); } 
+    });
 }
 
 function displayList(items, containerId) {
