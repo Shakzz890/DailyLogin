@@ -40,28 +40,35 @@ const db = getFirestore(app);
 const googleProvider = new GoogleAuthProvider();
 const githubProvider = new GithubAuthProvider();
 
-// FORCE PERSISTENCE (Keeps user logged in on refresh)
 setPersistence(auth, browserLocalPersistence).catch(console.error);
 
-/* === 3. AUTH ACTIONS === */
-window.loginGoogle = async () => {
-    try {
-        await signInWithPopup(auth, googleProvider);
-    } catch (error) {
-        alert("Google Login Failed: " + error.message);
+/* === 3. INSTANT SKELETON LOADER (The Fix) === */
+// If we know the user was logged in, show skeletons IMMEDIATELY before Firebase loads
+if (localStorage.getItem('isLoggedIn') === 'true') {
+    const row = document.getElementById('continue-watching-row');
+    const list = document.getElementById('continue-list');
+    if (row && list) {
+        row.style.display = 'block';
+        // Add 5 fake cards that shimmer
+        list.innerHTML = `
+            <div class="skeleton-card"></div>
+            <div class="skeleton-card"></div>
+            <div class="skeleton-card"></div>
+            <div class="skeleton-card"></div>
+            <div class="skeleton-card"></div>
+        `;
     }
+}
+
+/* === 4. AUTH ACTIONS === */
+window.loginGoogle = async () => {
+    try { await signInWithPopup(auth, googleProvider); } 
+    catch (e) { alert("Google Login Failed: " + e.message); }
 };
 
 window.loginGithub = async () => {
-    try {
-        await signInWithPopup(auth, githubProvider);
-    } catch (error) {
-        if (error.code === 'auth/account-exists-with-different-credential') {
-            alert("Email already linked to Google. Please sign in with Google.");
-        } else {
-            alert("GitHub Login Failed: " + error.message);
-        }
-    }
+    try { await signInWithPopup(auth, githubProvider); } 
+    catch (e) { alert("GitHub Login Failed: " + e.message); }
 };
 
 window.doLogout = async () => {
@@ -69,14 +76,10 @@ window.doLogout = async () => {
         await signOut(auth);
         localStorage.setItem('isLoggedIn', 'false');
         location.reload(); 
-    } catch (error) {
-        console.error("Logout Error:", error);
-    }
+    } catch (e) { console.error(e); }
 };
 
-/* === 4. WATCH HISTORY LOGIC === */
-
-// CALLED BY SCRIPT.JS
+/* === 5. WATCH HISTORY LOGIC === */
 window.saveWatchProgress = async (item, season = null, episode = null) => {
     const user = auth.currentUser;
     if (!user) return; 
@@ -84,7 +87,7 @@ window.saveWatchProgress = async (item, season = null, episode = null) => {
     try {
         const historyRef = doc(db, "users", user.uid, "history", item.id.toString());
         
-        // Prepare data matching your script.js structure
+        // Ensure data structure matches script.js logic
         const data = {
             id: item.id,
             title: item.title || item.name,
@@ -93,29 +96,24 @@ window.saveWatchProgress = async (item, season = null, episode = null) => {
             media_type: item.media_type || 'movie',
             timestamp: new Date()
         };
-
-        // Add Season/Ep only if they exist (for TV)
         if (season) data.season = season;
         if (episode) data.episode = episode;
 
         await setDoc(historyRef, data);
+        window.loadContinueWatching(); // Refresh list
         
-        // Refresh the UI list immediately
-        window.loadContinueWatching();
-        
-    } catch (error) {
-        console.error("Failed to save history:", error);
-    }
+    } catch (e) { console.error(e); }
 };
 
-// LOAD LIST ON HOME PAGE
 window.loadContinueWatching = async () => {
     const user = auth.currentUser;
     const row = document.getElementById('continue-watching-row');
     const list = document.getElementById('continue-list');
 
     if (!user || !row || !list) {
-        if(row) row.style.display = 'none';
+        // Only hide if we are sure there is no user. 
+        // If we are loading, we keep skeletons.
+        if(!localStorage.getItem('isLoggedIn')) row.style.display = 'none';
         return;
     }
 
@@ -129,6 +127,7 @@ window.loadContinueWatching = async () => {
             return;
         }
 
+        // We have data! Remove skeletons and show real cards.
         list.innerHTML = '';
         
         querySnapshot.forEach((doc) => {
@@ -141,7 +140,6 @@ window.loadContinueWatching = async () => {
                 label = `S${data.season}:E${data.episode}`;
             }
 
-            // Click Handler: Re-opens the player with correct Season/Episode
             card.onclick = () => {
                 const item = {
                     id: data.id,
@@ -150,27 +148,21 @@ window.loadContinueWatching = async () => {
                     poster_path: data.poster_path,
                     backdrop_path: data.backdrop_path,
                     media_type: data.media_type,
-                    // Fake date ensures script.js treats it as TV if needed
                     first_air_date: data.media_type === 'tv' ? '2020-01-01' : null 
                 };
                 
                 window.showDetailView(item);
                 
-                // If TV, auto-select the dropdowns
                 if(data.season && data.episode) {
                    setTimeout(() => {
                        const sSelect = document.getElementById('season-select');
                        if(sSelect) {
                            sSelect.value = data.season;
-                           // Trigger change to load episodes
                            if(typeof window.onSeasonChange === 'function') window.onSeasonChange();
-                           
-                           // Select specific episode after episodes load
                            setTimeout(() => {
                                const epGrid = document.getElementById('episode-grid');
-                               if(epGrid) {
-                                   const eps = epGrid.children;
-                                   if(eps[data.episode - 1]) eps[data.episode - 1].click();
+                               if(epGrid && epGrid.children[data.episode - 1]) {
+                                   epGrid.children[data.episode - 1].click();
                                }
                            }, 500);
                        }
@@ -187,34 +179,10 @@ window.loadContinueWatching = async () => {
         });
         row.style.display = 'block';
 
-    } catch (error) {
-        console.error("Error loading history:", error);
-    }
+    } catch (e) { console.error(e); }
 };
 
-// === DEBUG FUNCTION FOR YOUR BUTTON ===
-window.testSaveHistory = async () => {
-    const user = auth.currentUser;
-    if (!user) {
-        alert("Please Log In first!");
-        return;
-    }
-    
-    // Creates a Fake Movie entry
-    const fakeMovie = {
-        id: 550, // Fight Club ID
-        title: "Test Movie (Fight Club)",
-        poster_path: "/pB8BM7pdSp6B6Ih7QZ4DrQ3PmJK.jpg",
-        backdrop_path: "/hZkgoQYus5vegHoetLkCJzb17zJ.jpg",
-        media_type: "movie"
-    };
-
-    alert("Saving test movie...");
-    await window.saveWatchProgress(fakeMovie);
-    alert("Saved! Check the top of the home page.");
-};
-
-/* === 5. UI STATE MANAGER === */
+/* === 6. UI STATE MANAGER === */
 onAuthStateChanged(auth, (user) => {
     const loggedOutDiv = document.getElementById('logged-out-state');
     const loggedInDiv = document.getElementById('logged-in-state');
@@ -225,7 +193,6 @@ onAuthStateChanged(auth, (user) => {
     document.querySelectorAll('.auth-dropdown').forEach(d => d.classList.remove('show'));
 
     if (user) {
-        // LOGGED IN
         localStorage.setItem('isLoggedIn', 'true');
         if(loggedOutDiv) loggedOutDiv.style.display = 'none';
         if(loggedInDiv) loggedInDiv.style.display = 'block';
@@ -235,21 +202,16 @@ onAuthStateChanged(auth, (user) => {
             if(userAvatar) userAvatar.src = user.photoURL;
             if(menuAvatar) menuAvatar.src = user.photoURL;
         }
-        
         window.loadContinueWatching();
-        
     } else {
-        // LOGGED OUT
         localStorage.setItem('isLoggedIn', 'false');
         if(loggedInDiv) loggedInDiv.style.display = 'none';
         if(loggedOutDiv) loggedOutDiv.style.display = 'block';
-        
-        const historyRow = document.getElementById('continue-watching-row');
-        if(historyRow) historyRow.style.display = 'none';
+        document.getElementById('continue-watching-row').style.display = 'none';
     }
 });
 
-/* === 6. HELPERS === */
+/* === 7. HELPERS === */
 window.toggleAuthDropdown = (type) => {
     const loginDrop = document.getElementById('login-dropdown');
     const profileDrop = document.getElementById('profile-dropdown');

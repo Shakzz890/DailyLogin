@@ -350,3 +350,21 @@ a { text-decoration: none; color: inherit; }
     color: white; z-index: 9999; opacity: 0; pointer-events: none; transition: 0.5s ease;
 }
 .notification-banner.show { opacity: 1; transform: translateX(-50%) translateY(0); pointer-events: auto; }
+
+/* --- SKELETON LOADING ANIMATION --- */
+.skeleton-card {
+    flex: 0 0 auto;
+    width: 140px; /* Matches your movie card width */
+    height: 210px;
+    background: #1f1f1f;
+    background: linear-gradient(90deg, #1f1f1f 25%, #2a2a2a 50%, #1f1f1f 75%);
+    background-size: 200% 100%;
+    border-radius: 8px;
+    margin-right: 15px;
+    animation: skeleton-shimmer 1.5s infinite;
+}
+
+@keyframes skeleton-shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
