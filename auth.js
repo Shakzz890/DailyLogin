@@ -74,10 +74,12 @@ onAuthStateChanged(auth, (user) => {
         if(user.photoURL) {
             if(userAvatar) userAvatar.src = user.photoURL;
             if(menuAvatar) menuAvatar.src = user.photoURL;
+            localStorage.setItem('isLoggedIn', 'true');
         }
     } else {
         loggedInDiv.style.display = 'none';
         loggedOutDiv.style.display = 'block';
+        localStorage.setItem('isLoggedIn', 'false');
     }
 });
 
