@@ -277,30 +277,19 @@ function handleTabClick(index, tabName) {
    ========================================= */
 let currentSlideIndex = 0;
 
-/* --- GLOBAL SKELETON LOADER --- */
+/* --- GLOBAL SKELETON LOADER (UPDATED) --- */
 function showGlobalSkeletons() {
-    // 1. Handle the Main Slider
     const sliderTrack = document.getElementById('slider-track');
     if (sliderTrack) {
-        // We add class 'skeleton-shimmer' for the animation
         sliderTrack.innerHTML = '<div class="slide skeleton-slide skeleton-shimmer"></div>';
     }
 
-    // 2. Define all the lists you want to have skeletons
     const lists = [
-        'continue-list', // Included Continue Watching
-        'latest-list', 
-        'kdrama-list', 
-        'cdrama-list', 
-        'movies-list', 
-        'tvshows-list', 
-        'anime-list', 
-        'upcoming-list'
+        'latest-list', 'kdrama-list', 'cdrama-list', 'movies-list', 'tvshows-list', 'anime-list', 'upcoming-list'
     ];
 
-    // 3. Create the HTML string for the cards
-    // We generate 10 skeleton cards so it fills the screen width on mobile and desktop
-    const skeletonCardHTML = `
+    // Generate 10 skeleton cards so it fills the screen
+    const skeletonCardsHTML = `
         <div class="skeleton-card skeleton-shimmer"></div>
         <div class="skeleton-card skeleton-shimmer"></div>
         <div class="skeleton-card skeleton-shimmer"></div>
@@ -313,15 +302,51 @@ function showGlobalSkeletons() {
         <div class="skeleton-card skeleton-shimmer"></div>
     `;
 
-    // 4. Inject into every list
     lists.forEach(id => {
         const el = document.getElementById(id);
         if (el) {
-            el.innerHTML = skeletonCardHTML;
-            // Force the container to be visible during loading so the user sees the skeletons
+            el.innerHTML = skeletonCardsHTML;
             el.parentElement.style.display = 'block'; 
         }
     });
+}
+
+async function fetchData(endpoint, page = 1) {
+    try {
+        const separator = endpoint.includes('?') ? '&' : '?';
+        const url = `${BASE_URL}${endpoint}${separator}api_key=${API_KEY}&page=${page}`;
+        const res = await fetch(url);
+        return await res.json();
+    } catch (e) { return { results: [] }; }
+}
+
+async function initMovies() {
+    showGlobalSkeletons(); // <-- RUNS FIRST
+
+    try {
+        const [latest, kdrama, cdrama, anime, movies, tv, upcoming] = await Promise.all([
+            fetchData('/tv/on_the_air?sort_by=popularity.desc'),
+            fetchData('/discover/tv?with_original_language=ko&with_origin_country=KR&sort_by=popularity.desc'),
+            fetchData('/discover/tv?with_original_language=zh&with_origin_country=CN&sort_by=popularity.desc'),
+            fetchData('/discover/tv?with_genres=16&with_original_language=ja&sort_by=popularity.desc'),
+            fetchData('/trending/movie/week'),
+            fetchData('/trending/tv/week'),
+            fetchData('/movie/upcoming?region=US')
+        ]);
+        
+        initSlider(movies.results);
+        displayList(latest.results, 'latest-list');
+        displayList(cdrama.results, 'cdrama-list');
+        displayList(kdrama.results, 'kdrama-list');
+        displayList(movies.results, 'movies-list');
+        displayList(tv.results, 'tvshows-list');
+        displayList(anime.results, 'anime-list');
+        
+        if (upcoming && upcoming.results) {
+            displayUpcomingList(upcoming.results, 'upcoming-list');
+        }
+        
+    } catch (e) { console.error(e); } 
 }
 
 function displayList(items, containerId) {
@@ -331,7 +356,8 @@ function displayList(items, containerId) {
     items.forEach(item => {
         if(!item.poster_path) return;
         const card = document.createElement('div');
-        card.className = 'movie-card focusable-element';
+        // ADDED: 'fade-in' class for smooth transition
+        card.className = 'movie-card focusable-element fade-in';
         card.setAttribute("tabindex", "0");
         card.onclick = () => showDetailView(item);
         card.innerHTML = `
@@ -363,7 +389,8 @@ function displayUpcomingList(items, containerId) {
         if(!item.poster_path) return;
         const dateStr = new Date(item.release_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
         const card = document.createElement('div');
-        card.className = 'movie-card focusable-element';
+        // ADDED: 'fade-in' class for smooth transition
+        card.className = 'movie-card focusable-element fade-in';
         card.onclick = () => showDetailView(item);
         card.innerHTML = `
             <div class="coming-label">Coming ${dateStr}</div>
@@ -382,7 +409,8 @@ function initSlider(items) {
     
     items.slice(0, 5).forEach((item, index) => {
         const slide = document.createElement('div');
-        slide.className = 'slide';
+        // ADDED: 'fade-in' class
+        slide.className = 'slide fade-in';
         slide.style.backgroundImage = `url(${IMG_URL}${item.backdrop_path})`;
         slide.innerHTML = `<div class="slide-content"><h1>${item.title || item.name}</h1></div>`;
         slide.onclick = () => showDetailView(item);
@@ -457,7 +485,7 @@ async function loadMoreCategoryResults() {
             data.results.forEach(item => {
                 if(!item.poster_path) return;
                 const card = document.createElement('div');
-                card.className = 'movie-card';
+                card.className = 'movie-card fade-in';
                 card.onclick = () => showDetailView(item);
                 
                 let badge = '';

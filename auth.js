@@ -42,20 +42,19 @@ const githubProvider = new GithubAuthProvider();
 
 setPersistence(auth, browserLocalPersistence).catch(console.error);
 
-/* === 3. INSTANT SKELETON LOADER (The Fix) === */
-// If we know the user was logged in, show skeletons IMMEDIATELY before Firebase loads
+/* === 3. INSTANT SKELETON LOADER === */
+// Shows shimmering skeletons IMMEDIATELY if user is logged in
 if (localStorage.getItem('isLoggedIn') === 'true') {
     const row = document.getElementById('continue-watching-row');
     const list = document.getElementById('continue-list');
     if (row && list) {
         row.style.display = 'block';
-        // Add 5 fake cards that shimmer
         list.innerHTML = `
-            <div class="skeleton-card"></div>
-            <div class="skeleton-card"></div>
-            <div class="skeleton-card"></div>
-            <div class="skeleton-card"></div>
-            <div class="skeleton-card"></div>
+            <div class="skeleton-card skeleton-shimmer"></div>
+            <div class="skeleton-card skeleton-shimmer"></div>
+            <div class="skeleton-card skeleton-shimmer"></div>
+            <div class="skeleton-card skeleton-shimmer"></div>
+            <div class="skeleton-card skeleton-shimmer"></div>
         `;
     }
 }
@@ -87,7 +86,6 @@ window.saveWatchProgress = async (item, season = null, episode = null) => {
     try {
         const historyRef = doc(db, "users", user.uid, "history", item.id.toString());
         
-        // Ensure data structure matches script.js logic
         const data = {
             id: item.id,
             title: item.title || item.name,
@@ -100,7 +98,7 @@ window.saveWatchProgress = async (item, season = null, episode = null) => {
         if (episode) data.episode = episode;
 
         await setDoc(historyRef, data);
-        window.loadContinueWatching(); // Refresh list
+        window.loadContinueWatching(); 
         
     } catch (e) { console.error(e); }
 };
@@ -111,8 +109,6 @@ window.loadContinueWatching = async () => {
     const list = document.getElementById('continue-list');
 
     if (!user || !row || !list) {
-        // Only hide if we are sure there is no user. 
-        // If we are loading, we keep skeletons.
         if(!localStorage.getItem('isLoggedIn')) row.style.display = 'none';
         return;
     }
@@ -127,13 +123,13 @@ window.loadContinueWatching = async () => {
             return;
         }
 
-        // We have data! Remove skeletons and show real cards.
         list.innerHTML = '';
         
         querySnapshot.forEach((doc) => {
             const data = doc.data();
             const card = document.createElement('div');
-            card.className = 'movie-card';
+            // ADDED: 'fade-in' class here
+            card.className = 'movie-card fade-in'; 
             
             let label = "Movie";
             if (data.season && data.episode) {

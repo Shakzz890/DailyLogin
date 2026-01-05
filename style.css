@@ -354,6 +354,15 @@ a { text-decoration: none; color: inherit; }
 /* =========================================
    SKELETON LOADING ANIMATIONS
    ========================================= */
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.fade-in {
+    animation: fadeInUp 0.5s ease-out forwards;
+}
+
 
 /* 1. The Shimmer Animation Keyframes */
 @keyframes skeleton-shimmer {
