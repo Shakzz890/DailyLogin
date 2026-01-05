@@ -516,7 +516,10 @@ function closeDetailView() {
 function changeDetailServer(season = 1, episode = 1) {
     if(!currentItem) return;
     
-    // Update current tracking
+    // ✅ FIX: Restore reliable media type detection
+    const type = currentItem.media_type === 'movie' || !currentItem.first_air_date ? 'movie' : 'tv';
+    
+    // Update global tracking
     currentSeason = season;
     currentEpisode = episode;
     
@@ -524,38 +527,49 @@ function changeDetailServer(season = 1, episode = 1) {
     const id = currentItem.id;
     let url = '';
 
-    // --- Server Logic ---
+    // --- Server Logic (using the reliable `type` variable) ---
     if(server === 'vidsrc.to') {
-        url = `https://vidsrc.to/embed/${currentItem.media_type==='tv'?'tv':'movie'}/${id}${currentItem.media_type==='tv'?`/${season}/${episode}`:''}`;
+        url = type === 'tv' 
+            ? `https://vidsrc.to/embed/tv/${id}/${season}/${episode}` 
+            : `https://vidsrc.to/embed/movie/${id}`;
     } else if(server === 'vidsrc.me') {
-        url = currentItem.media_type==='tv' ? `https://vidsrc.me/embed/tv?tmdb=${id}&season=${season}&episode=${episode}` : `https://vidsrc.me/embed/movie?tmdb=${id}`;
+        url = type === 'tv' 
+            ? `https://vidsrc.me/embed/tv?tmdb=${id}&season=${season}&episode=${episode}` 
+            : `https://vidsrc.me/embed/movie?tmdb=${id}`;
     } else if(server === 'vidlink.pro') {
-        url = currentItem.media_type==='tv' ? `https://vidlink.pro/tv/${id}/${season}/${episode}` : `https://vidlink.pro/movie/${id}`;
+        url = type === 'tv' 
+            ? `https://vidlink.pro/tv/${id}/${season}/${episode}` 
+            : `https://vidlink.pro/movie/${id}`;
     } else if(server === 'superembed.stream') {
-        url = currentItem.media_type==='tv' ? `https://superembed.stream/tv/${id}/${season}/${episode}` : `https://superembed.stream/movie/${id}`;
+        url = type === 'tv' 
+            ? `https://superembed.stream/tv/${id}/${season}/${episode}` 
+            : `https://superembed.stream/movie/${id}`;
     } else if(server === '2embed.cc') {
         url = `https://www.2embed.cc/embed/${id}`;
     } else if(server === 'vidsrc.cc') {
-        url = currentItem.media_type==='tv' ? `https://vidsrc.cc/v2/embed/tv/${id}/${season}/${episode}` : `https://vidsrc.cc/v2/embed/movie/${id}`;
+        url = type === 'tv' 
+            ? `https://vidsrc.cc/v2/embed/tv/${id}/${season}/${episode}` 
+            : `https://vidsrc.cc/v2/embed/movie/${id}`;
     } else if(server === 'vidsrc.xyz') {
-        url = `https://vidsrc.xyz/embed/${currentItem.media_type}/${id}`;
+        url = `https://vidsrc.xyz/embed/${type}/${id}`;
     } else if(server === 'vidsrc.vip') {
-        url = currentItem.media_type==='tv' ? `https://vidsrc.vip/embed/tv/${id}/${season}/${episode}` : `https://vidsrc.vip/embed/movie/${id}`;
+        url = type === 'tv' 
+            ? `https://vidsrc.vip/embed/tv/${id}/${season}/${episode}` 
+            : `https://vidsrc.vip/embed/movie/${id}`;
     } else if(server === 'vidsrc.net') {
-        url = `https://vidsrc.net/embed/${currentItem.media_type}/${id}`;
+        url = `https://vidsrc.net/embed/${type}/${id}`;
     } else if(server === 'net20.cc') {
-        url = currentItem.media_type==='tv' ? `https://net20.cc/embed/tv/${id}/${season}/${episode}` : `https://net20.cc/embed/movie/${id}`;
+        url = type === 'tv' 
+            ? `https://net20.cc/embed/tv/${id}/${season}/${episode}` 
+            : `https://net20.cc/embed/movie/${id}`;
     }
 
+    // ✅ Load the video
     document.getElementById('detail-video').src = url;
     
-    // Safe Auto-Save
+    // ✅ Auto-save progress (safe even if auth.js isn't loaded)
     if (typeof window.saveWatchProgress === 'function') {
-        const type = currentItem.media_type === 'movie' || !currentItem.first_air_date ? 'movie' : 'tv';
-        const seasonToSave = type === 'tv' ? season : null;
-        const episodeToSave = type === 'tv' ? episode : null;
-        
-        window.saveWatchProgress(currentItem, seasonToSave, episodeToSave);
+        window.saveWatchProgress(currentItem, type === 'tv' ? season : null, type === 'tv' ? episode : null);
     }
 }
 
