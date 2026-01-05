@@ -6,6 +6,10 @@ const BASE_URL = 'https://api.themoviedb.org/3';
 const IMG_URL = 'https://image.tmdb.org/t/p/original';
 const POSTER_URL = 'https://image.tmdb.org/t/p/w300';
 
+// NEW: Track current playback position globally
+let currentSeason = 1;
+let currentEpisode = 1;
+
 /* --- LOADER --- */
 const CutieLoader = {
     show: (msg = "Loading...") => {
@@ -493,53 +497,69 @@ async function showDetailView(item) {
     changeDetailServer(1, 1);
 }
 
+// MODIFIED: Save history before closing
 function closeDetailView() {
+    // SAVE WATCH PROGRESS BEFORE CLOSING
+    if (currentItem && auth?.currentUser) {
+        const type = currentItem.media_type === 'movie' || !currentItem.first_air_date ? 'movie' : 'tv';
+        const seasonToSave = type === 'tv' ? currentSeason : null;
+        const episodeToSave = type === 'tv' ? currentEpisode : null;
+        
+        window.saveWatchProgress(currentItem, seasonToSave, episodeToSave);
+        console.log("💾 Saving progress:", currentItem.title, "S:", seasonToSave, "E:", episodeToSave);
+    }
+    
     document.getElementById('detail-view').style.display = 'none';
     document.getElementById('detail-video').src = '';
 }
 
+// MODIFIED: Save progress when changing server/episode
 function changeDetailServer(season = 1, episode = 1) {
     if(!currentItem) return;
     
-    // Determine media type (movie or tv)
-    const type = currentItem.media_type === 'movie' || !currentItem.first_air_date ? 'movie' : 'tv';
+    // Update current tracking
+    currentSeason = season;
+    currentEpisode = episode;
+    
     const server = document.getElementById('detail-server').value;
     const id = currentItem.id;
     let url = '';
 
     // --- Server Logic ---
     if(server === 'vidsrc.to') {
-        url = type==='tv' ? `https://vidsrc.to/embed/tv/${id}/${season}/${episode}` : `https://vidsrc.to/embed/movie/${id}`;
+        url = `https://vidsrc.to/embed/${currentItem.media_type==='tv'?'tv':'movie'}/${id}${currentItem.media_type==='tv'?`/${season}/${episode}`:''}`;
     } else if(server === 'vidsrc.me') {
-        url = type==='tv' ? `https://vidsrc.me/embed/tv?tmdb=${id}&season=${season}&episode=${episode}` : `https://vidsrc.me/embed/movie?tmdb=${id}`;
+        url = currentItem.media_type==='tv' ? `https://vidsrc.me/embed/tv?tmdb=${id}&season=${season}&episode=${episode}` : `https://vidsrc.me/embed/movie?tmdb=${id}`;
     } else if(server === 'vidlink.pro') {
-        url = type==='tv' ? `https://vidlink.pro/tv/${id}/${season}/${episode}` : `https://vidlink.pro/movie/${id}`;
+        url = currentItem.media_type==='tv' ? `https://vidlink.pro/tv/${id}/${season}/${episode}` : `https://vidlink.pro/movie/${id}`;
     } else if(server === 'superembed.stream') {
-        url = type==='tv' ? `https://superembed.stream/tv/${id}/${season}/${episode}` : `https://superembed.stream/movie/${id}`;
+        url = currentItem.media_type==='tv' ? `https://superembed.stream/tv/${id}/${season}/${episode}` : `https://superembed.stream/movie/${id}`;
     } else if(server === '2embed.cc') {
-        url = `https://www.2embed.cc/embed/${id}`; // Simple auto-detect
+        url = `https://www.2embed.cc/embed/${id}`;
     } else if(server === 'vidsrc.cc') {
-        url = type==='tv' ? `https://vidsrc.cc/v2/embed/tv/${id}/${season}/${episode}` : `https://vidsrc.cc/v2/embed/movie/${id}`;
+        url = currentItem.media_type==='tv' ? `https://vidsrc.cc/v2/embed/tv/${id}/${season}/${episode}` : `https://vidsrc.cc/v2/embed/movie/${id}`;
     } else if(server === 'vidsrc.xyz') {
-        url = `https://vidsrc.xyz/embed/${type}/${id}`;
+        url = `https://vidsrc.xyz/embed/${currentItem.media_type}/${id}`;
     } else if(server === 'vidsrc.vip') {
-        url = type==='tv' ? `https://vidsrc.vip/embed/tv/${id}/${season}/${episode}` : `https://vidsrc.vip/embed/movie/${id}`;
+        url = currentItem.media_type==='tv' ? `https://vidsrc.vip/embed/tv/${id}/${season}/${episode}` : `https://vidsrc.vip/embed/movie/${id}`;
     } else if(server === 'vidsrc.net') {
-        url = `https://vidsrc.net/embed/${type}/${id}`;
-    } 
-    
-    // --- NEW: NetMirror (net20.cc) ---
-    else if (server === 'net20.cc') {
-        // Warning: This server might block iframes or require a different ID (IMDB vs TMDB)
-        // Trying standard embed pattern:
-        url = type === 'tv' 
-            ? `https://net20.cc/embed/tv/${id}/${season}/${episode}` 
-            : `https://net20.cc/embed/movie/${id}`;
+        url = `https://vidsrc.net/embed/${currentItem.media_type}/${id}`;
+    } else if(server === 'net20.cc') {
+        url = currentItem.media_type==='tv' ? `https://net20.cc/embed/tv/${id}/${season}/${episode}` : `https://net20.cc/embed/movie/${id}`;
     }
 
     document.getElementById('detail-video').src = url;
+    
+    // AUTO-SAVE when user changes server/episode
+    if (auth?.currentUser) {
+        const type = currentItem.media_type === 'movie' || !currentItem.first_air_date ? 'movie' : 'tv';
+        const seasonToSave = type === 'tv' ? season : null;
+        const episodeToSave = type === 'tv' ? episode : null;
+        
+        window.saveWatchProgress(currentItem, seasonToSave, episodeToSave);
+        console.log("💾 Auto-saved server change:", currentItem.title);
+    }
 }
-
 
 function populateSeasons(seasons) {
     const seasonSelect = document.getElementById('season-select');
@@ -562,17 +582,20 @@ function populateSeasons(seasons) {
     onSeasonChange();
 }
 
+// MODIFIED: Track season changes
 function onSeasonChange() {
+    currentSeason = parseInt(document.getElementById('season-select').value);
     renderEpisodes(); 
 }
 
+// MODIFIED: Track episode clicks
 function renderEpisodes() {
     const seasonSelect = document.getElementById('season-select');
     const grid = document.getElementById('episode-grid');
     grid.innerHTML = '';
     
     const epCount = parseInt(seasonSelect.options[seasonSelect.selectedIndex]?.dataset.epCount || 12);
-    const currentS = seasonSelect.value;
+    currentSeason = parseInt(seasonSelect.value);
 
     for (let i = 1; i <= epCount; i++) {
         const box = document.createElement('div');
@@ -581,9 +604,13 @@ function renderEpisodes() {
         box.onclick = () => {
             document.querySelectorAll('.ep-box').forEach(b => b.classList.remove('active'));
             box.classList.add('active');
-            changeDetailServer(currentS, i);
+            currentEpisode = i; // Track selected episode
+            changeDetailServer(currentSeason, i);
         };
-        if (i === 1) box.classList.add('active'); 
+        if (i === 1) {
+            box.classList.add('active');
+            currentEpisode = 1; // Set default
+        }
         grid.appendChild(box);
     }
 }
@@ -615,7 +642,6 @@ window.shareContent = function() {
 window.downloadContent = function() {
     if(!currentItem) return;
     const title = currentItem.title || currentItem.name || "Movie";
-    // Shortener Logic
     const SHORTENER_API_KEY = '141b190d3ff71530ac5b9150eedb1339c2e6a369';
     const SHORTENER_BASE_URL = 'https://shortxlinks.com/api';
     const targetUrl = `https://www.google.com/search?q=download+${encodeURIComponent(title)}+free`;
@@ -744,7 +770,7 @@ async function loadMoreBrowseResults() {
 
 function handleBrowseScroll() {
     const container = document.getElementById('search-results');
-    if (container.scrollTop + container.clientHeight >= container.scrollHeight - 100) {
+    if(container.scrollTop + container.clientHeight >= container.scrollHeight - 100) {
         if (!document.getElementById('search-input').value.trim()) {
             loadMoreBrowseResults();
         }
@@ -815,8 +841,6 @@ window.searchTMDB = async function() {
 /* =========================================
    7. UI INTERACTIONS (Auth handled in auth.js)
    ========================================= */
-
-// NOTE: toggleAuthDropdown, loginGoogle, loginGithub, doLogout are in auth.js now.
 
 // This function prevents UI flickering by checking LocalStorage before Firebase loads
 function checkLoginState() {
