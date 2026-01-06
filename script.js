@@ -8,8 +8,10 @@ const BASE_URL = 'https://api.themoviedb.org/3';
 const IMG_URL = 'https://image.tmdb.org/t/p/original';
 const POSTER_URL = 'https://image.tmdb.org/t/p/w300';
 
+let detailMode = "info"; 
 let currentSeason = 1;
 let currentEpisode = 1;
+
 
 /* --- LOADER --- */
 const CutieLoader = {
@@ -507,10 +509,30 @@ let currentDetails = null;
 
 async function showDetailView(item) {
     currentItem = item;
-    const view = document.getElementById('detail-view');
-    document.getElementById('detail-title').innerText = item.title || item.name;
-    document.getElementById('detail-overview').innerText = item.overview || "No overview available.";
-    document.getElementById('detail-date').innerText = (item.first_air_date || item.release_date || "2025").substring(0,4);
+    detailMode = "info";
+
+    document.getElementById('detail-view').style.display = 'flex';
+
+    document.getElementById('detail-title').innerText =
+        item.title || item.name;
+
+    document.getElementById('detail-overview').innerText =
+        item.overview || "No overview available.";
+
+    document.getElementById('detail-date').innerText =
+        (item.first_air_date || item.release_date || "2025").substring(0,4);
+
+    // Poster
+    document.getElementById('detail-poster-img').src =
+        item.backdrop_path
+            ? `${IMG_URL}${item.backdrop_path}`
+            : `${POSTER_URL}${item.poster_path}`;
+
+    // Hide player initially
+    document.getElementById('detail-video').src = '';
+    document.getElementById('detail-poster-section').style.display = 'block';
+}
+
     
     const favBtn = document.querySelector('.action-item');
     if(favBtn) favBtn.classList.remove('active');
@@ -1013,3 +1035,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
     }, 2500); 
 });
+window.startPlayback = function () {
+    detailMode = "player";
+
+    document.getElementById('detail-poster-section').style.display = 'none';
+
+    const isTv =
+        currentItem.media_type === 'tv' ||
+        currentItem.first_air_date ||
+        (currentItem.name && !currentItem.title);
+
+    currentItem.media_type = isTv ? 'tv' : 'movie';
+
+    if (isTv) {
+        changeDetailServer(1, 1);
+    } else {
+        changeDetailServer();
+    }
+};

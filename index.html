@@ -173,6 +173,21 @@
 
   <div id="detail-view" class="detail-view">
       <div class="detail-video-container">
+      <div id="detail-poster-section" class="detail-poster-section">
+    <img id="detail-poster-img">
+    <div class="poster-overlay"></div>
+
+    <div class="poster-actions">
+        <button class="play-main-btn" onclick="startPlayback()">
+            <i class="fa-solid fa-play"></i> Play
+        </button>
+
+        <button class="fav-main-btn" onclick="toggleDetailFavorite(this)">
+            <i class="fa-regular fa-heart"></i> Watchlist
+        </button>
+    </div>
+</div>
+
         <div id="video-cover" class="video-cover" onclick="hideVideoCover()">
     <img id="video-cover-img" src="" alt="Cover">
     <div class="play-icon">

@@ -456,3 +456,47 @@ a { text-decoration: none; color: inherit; }
 .video-cover:hover .play-icon {
     transform: scale(1.1);
 }
+.detail-poster-section {
+    position: absolute;
+    inset: 0;
+    z-index: 4;
+}
+
+#detail-poster-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.poster-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, #0f0f0f 20%, transparent 70%);
+}
+
+.poster-actions {
+    position: absolute;
+    bottom: 30px;
+    left: 20px;
+    display: flex;
+    gap: 15px;
+    z-index: 5;
+}
+
+.play-main-btn {
+    background: #e50914;
+    color: white;
+    border: none;
+    padding: 14px 28px;
+    border-radius: 30px;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.fav-main-btn {
+    background: #222;
+    color: white;
+    border: 1px solid #333;
+    padding: 14px 24px;
+    border-radius: 30px;
+}
