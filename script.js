@@ -511,52 +511,55 @@ async function showDetailView(item) {
     currentItem = item;
     detailMode = "info";
 
-    document.getElementById('detail-view').style.display = 'flex';
+    const view = document.getElementById('detail-view');
+    view.style.display = 'flex';
 
-    document.getElementById('detail-title').innerText =
-        item.title || item.name;
+    // Populate Info
+    document.getElementById('detail-title').innerText = item.title || item.name;
+    document.getElementById('detail-overview').innerText = item.overview || "No overview available.";
+    document.getElementById('detail-date').innerText = (item.first_air_date || item.release_date || "2025").substring(0, 4);
 
-    document.getElementById('detail-overview').innerText =
-        item.overview || "No overview available.";
+    document.getElementById('detail-poster-img').src = item.backdrop_path 
+        ? `${IMG_URL}${item.backdrop_path}` 
+        : `${POSTER_URL}${item.poster_path}`;
 
-    document.getElementById('detail-date').innerText =
-        (item.first_air_date || item.release_date || "2025").substring(0,4);
-
-    // Poster
-    document.getElementById('detail-poster-img').src =
-        item.backdrop_path
-            ? `${IMG_URL}${item.backdrop_path}`
-            : `${POSTER_URL}${item.poster_path}`;
-
-    // Hide player initially
-    document.getElementById('detail-video').src = '';
+    // --- KEY FIX HERE ---
+    // Ensure the Video is HIDDEN and the Poster Section is SHOWN
+    const videoFrame = document.getElementById('detail-video');
+    if(videoFrame) {
+        videoFrame.src = ''; // Stop previous video
+        videoFrame.style.display = 'none'; // Hide the player layer
+    }
     document.getElementById('detail-poster-section').style.display = 'block';
-}
+    // --------------------
 
-    
     const favBtn = document.querySelector('.action-item');
-    if(favBtn) favBtn.classList.remove('active');
+    if (favBtn) favBtn.classList.remove('active');
 
+    // Determine Media Type
     const isTv = item.media_type === 'tv' || item.first_air_date || (item.name && !item.title);
-    currentItem.media_type = isTv ? 'tv' : 'movie'; 
-    
+    currentItem.media_type = isTv ? 'tv' : 'movie';
+
     const filters = document.querySelector('.episode-filters');
-    
+
     if (isTv) {
         try {
             const res = await fetch(`${BASE_URL}/tv/${item.id}?api_key=${API_KEY}`);
             currentDetails = await res.json();
-            if(filters) filters.style.display = 'flex';
+            if (filters) filters.style.display = 'flex';
             populateSeasons(currentDetails.seasons);
-        } catch (e) { console.error(e); }
+        } catch (e) {
+            console.error(e);
+        }
     } else {
-        if(filters) filters.style.display = 'none';
-        renderMovieEpisode(); 
+        if (filters) filters.style.display = 'none';
+        renderMovieEpisode();
     }
-
-    view.style.display = 'flex';
+    
+    // Pre-load the link but keep player hidden until user clicks "Watch"
     changeDetailServer(1, 1);
 }
+
 
 function closeDetailView() {
     if (currentItem && typeof window.saveWatchProgress === 'function') {
@@ -1036,10 +1039,25 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 2500); 
 });
 window.startPlayback = function () {
+    if (!currentItem) {
+        console.error("No item selected to play.");
+        return;
+    }
+
     detailMode = "player";
 
-    document.getElementById('detail-poster-section').style.display = 'none';
+    // 1. Hide the Info/Poster Section
+    const posterSection = document.getElementById('detail-poster-section');
+    if (posterSection) posterSection.style.display = 'none';
 
+    // 2. SHOW the Video Player (Crucial Fix)
+    const videoFrame = document.getElementById('detail-video');
+    if (videoFrame) {
+        videoFrame.style.display = 'block';
+        videoFrame.style.zIndex = '100'; // Ensure it is on top
+    }
+
+    // 3. Determine type and load server
     const isTv =
         currentItem.media_type === 'tv' ||
         currentItem.first_air_date ||
@@ -1047,9 +1065,10 @@ window.startPlayback = function () {
 
     currentItem.media_type = isTv ? 'tv' : 'movie';
 
+    // Load the correct video
     if (isTv) {
-        changeDetailServer(1, 1);
+        changeDetailServer(currentSeason || 1, currentEpisode || 1);
     } else {
-        changeDetailServer();
+        changeDetailServer(1, 1);
     }
 };
