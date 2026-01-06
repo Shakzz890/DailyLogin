@@ -173,6 +173,13 @@
 
   <div id="detail-view" class="detail-view">
       <div class="detail-video-container">
+        <div id="video-cover" class="video-cover" onclick="hideVideoCover()">
+    <img id="video-cover-img" src="" alt="Cover">
+    <div class="play-icon">
+        <i class="fa-solid fa-play"></i>
+    </div>
+</div>
+
           <iframe id="detail-video" allowfullscreen></iframe>
           <div class="detail-close" onclick="closeDetailView()"><i class="fa-solid fa-chevron-down"></i></div>
       </div>
