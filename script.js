@@ -251,12 +251,13 @@ function saveFavoritesToStorage() {
 window.filterChannels = function() {
     const query = document.getElementById('live-search-input').value;
     const clearBtn = document.getElementById('live-clear-btn');
-    clearBtn.style.display = query.trim().length > 0 ? 'block' : 'none';
+    if(clearBtn) clearBtn.style.display = query.trim().length > 0 ? 'block' : 'none';
     renderChannelButtons(query);
 };
 
 window.clearLiveSearch = function() {
-    document.getElementById('live-search-input').value = '';
+    const searchInput = document.getElementById('live-search-input');
+    if(searchInput) searchInput.value = '';
     filterChannels();
 };
 
@@ -281,7 +282,8 @@ function setupCategoryTabs() {
             div.innerHTML = `<span>${tab.toUpperCase()}</span>`;
             div.onclick = () => {
                 handleTabClick(index, tab);
-                document.getElementById('categoryModal').style.display = 'none';
+                const modal = document.getElementById('categoryModal');
+                if(modal) modal.style.display = 'none';
             };
             mobileList.appendChild(div);
         }
@@ -293,7 +295,7 @@ function handleTabClick(index, tabName) {
     document.querySelectorAll('.category-button').forEach((b, i) => b.classList.toggle('active', i === index));
     document.querySelectorAll('.mobile-cat-option').forEach((b, i) => b.classList.toggle('active', i === index));
     const mobBtn = document.getElementById('mobileCategoryBtn');
-    if(mobBtn) mobBtn.querySelector('span').textContent = tabName.toUpperCase();
+    if(mobBtn && mobBtn.querySelector('span')) mobBtn.querySelector('span').textContent = tabName.toUpperCase();
     renderChannelButtons(currentSearchFilter);
 }
 
@@ -375,7 +377,7 @@ function displayList(items, containerId) {
         card.onclick = () => showDetailView(item);
         card.innerHTML = `
             <div class="badge-overlay">HD</div>
-            <img src="${POSTER_URL}${item.poster_path}" loading="lazy">
+            <img src="${POSTER_URL}${item.poster_path}" loading="lazy" onerror="this.src='placeholder.jpg'">
             <div class="card-title">${item.title || item.name}</div>
         `;
         container.appendChild(card);
@@ -406,7 +408,7 @@ function displayUpcomingList(items, containerId) {
         card.onclick = () => showDetailView(item);
         card.innerHTML = `
             <div class="coming-label">Coming ${dateStr}</div>
-            <img src="${POSTER_URL}${item.poster_path}" loading="lazy">
+            <img src="${POSTER_URL}${item.poster_path}" loading="lazy" onerror="this.src='placeholder.jpg'">
             <div class="card-title">${item.title || item.name}</div>
         `;
         container.appendChild(card);
@@ -416,7 +418,7 @@ function displayUpcomingList(items, containerId) {
 function initSlider(items) {
     const track = document.getElementById('slider-track');
     const dotsContainer = document.getElementById('slider-dots');
-    if (!track) return;
+    if (!track || !dotsContainer) return;
     track.innerHTML = ''; dotsContainer.innerHTML = '';
     
     items.slice(0, 5).forEach((item, index) => {
@@ -452,8 +454,13 @@ let categoryState = {
 
 window.openCategory = function(type, title) {
     const view = document.getElementById('category-view');
-    document.getElementById('category-title').innerText = title;
-    document.getElementById('category-grid').innerHTML = ''; 
+    const titleEl = document.getElementById('category-title');
+    const gridEl = document.getElementById('category-grid');
+    
+    if (!view || !titleEl || !gridEl) return;
+    
+    titleEl.innerText = title;
+    gridEl.innerHTML = ''; 
     view.style.display = 'flex';
     
     let endpoint = '';
@@ -477,7 +484,8 @@ window.openCategory = function(type, title) {
 };
 
 window.closeCategory = function() {
-    document.getElementById('category-view').style.display = 'none';
+    const view = document.getElementById('category-view');
+    if(view) view.style.display = 'none';
 };
 
 async function loadMoreCategoryResults() {
@@ -494,6 +502,7 @@ async function loadMoreCategoryResults() {
             categoryState.hasMore = false;
         } else {
             const grid = document.getElementById('category-grid');
+            if(!grid) return;
             data.results.forEach(item => {
                 if(!item.poster_path) return;
                 const card = document.createElement('div');
@@ -507,7 +516,7 @@ async function loadMoreCategoryResults() {
                     badge = `<div class="coming-label">Coming ${dateStr}</div>`;
                 }
 
-                card.innerHTML = `${badge}<img src="${POSTER_URL}${item.poster_path}" loading="lazy"><div class="card-title">${item.title || item.name}</div>`;
+                card.innerHTML = `${badge}<img src="${POSTER_URL}${item.poster_path}" loading="lazy" onerror="this.src='placeholder.jpg'"><div class="card-title">${item.title || item.name}</div>`;
                 grid.appendChild(card);
             });
             categoryState.page++;
@@ -518,7 +527,7 @@ async function loadMoreCategoryResults() {
 
 function handleCategoryScroll() {
     const container = document.getElementById('category-content');
-    if(container.scrollTop + container.clientHeight >= container.scrollHeight - 100) {
+    if(container && container.scrollTop + container.clientHeight >= container.scrollHeight - 100) {
         loadMoreCategoryResults();
     }
 }
@@ -567,8 +576,10 @@ window.downloadContent = function() {
 
 // Close View
 window.closeDetailView = function() {
-    document.getElementById('detail-view').style.display = 'none';
-    document.getElementById('detail-video').src = '';
+    const view = document.getElementById('detail-view');
+    const video = document.getElementById('detail-video');
+    if(view) view.style.display = 'none';
+    if(video) video.src = '';
 };
 
 // Sandbox Warning
@@ -588,9 +599,11 @@ function showSandboxWarning(server) {
 // Temporarily Disable Sandbox
 window.temporarilyDisableSandbox = function() {
     const iframe = document.getElementById('detail-video');
-    iframe.removeAttribute("sandbox");
-    iframe.removeAttribute("allowfullscreen");
-    iframe.src = iframe.src; // Reload
+    if(iframe) {
+        iframe.removeAttribute("sandbox");
+        iframe.removeAttribute("allowfullscreen");
+        iframe.src = iframe.src; // Reload
+    }
     const warning = document.getElementById('sandbox-warning');
     if(warning) warning.remove();
 };
@@ -599,6 +612,7 @@ window.temporarilyDisableSandbox = function() {
 async function showDetailView(item) {
     currentItem = item;
     const view = document.getElementById('detail-view');
+    if(!view) return;
     
     // 1. Basic Info
     const title = item.title || item.name;
@@ -607,18 +621,25 @@ async function showDetailView(item) {
     const rating = item.vote_average ? item.vote_average.toFixed(1) : "N/A";
     
     // 2. Set DOM Elements
-    document.getElementById('detail-title').innerText = title;
-    document.getElementById('detail-overview').innerText = item.overview || "No overview available.";
-    document.getElementById('detail-date').innerText = year;
-    document.getElementById('detail-rating').innerText = rating;
+    const titleEl = document.getElementById('detail-title');
+    const overviewEl = document.getElementById('detail-overview');
+    const dateEl = document.getElementById('detail-date');
+    const ratingEl = document.getElementById('detail-rating');
+    
+    if(titleEl) titleEl.innerText = title;
+    if(overviewEl) overviewEl.innerText = item.overview || "No overview available.";
+    if(dateEl) dateEl.innerText = year;
+    if(ratingEl) ratingEl.innerText = rating;
     
     // 3. Set Backdrop
     const backdropImg = document.getElementById('detail-backdrop-img');
     const bgPath = item.backdrop_path || item.poster_path;
-    backdropImg.src = bgPath ? `${IMG_URL}${bgPath}` : '';
+    if(backdropImg) backdropImg.src = bgPath ? `${IMG_URL}${bgPath}` : '';
 
     // 4. Reset Player & UI
-    document.getElementById('detail-video').src = '';
+    const video = document.getElementById('detail-video');
+    if(video) video.src = '';
+    
     const favBtn = document.querySelector('.watchlist-btn');
     if(favBtn) favBtn.classList.remove('active');
 
@@ -669,7 +690,7 @@ async function showDetailView(item) {
                     recCard.className = 'rec-card';
                     recCard.onclick = () => showDetailView(recItem);
                     recCard.innerHTML = `
-                        <img src="${POSTER_URL}${recItem.poster_path}" alt="${recItem.title || recItem.name}" loading="lazy">
+                        <img src="${POSTER_URL}${recItem.poster_path}" alt="${recItem.title || recItem.name}" loading="lazy" onerror="this.src='placeholder.jpg'">
                         <div class="rec-card-title">${recItem.title || recItem.name}</div>
                     `;
                     recGrid.appendChild(recCard);
@@ -725,7 +746,7 @@ window.changeDetailServer = function(season = 1, episode = 1) {
     if (toggleBtn) toggleBtn.checked = isSandboxEnabled;
     
     // Provider-specific sandbox policies
-    const policy = PROVIDER_SANDBOX_POLICY[server] || "allow-scripts allow-same-origin";
+    const policy = PROVIDER_SANDBOX_POLICY[server] || "allow-scripts allow-same-origin allow-presentation";
     
     if (isSandboxEnabled && policy) {
         iframe.setAttribute("sandbox", policy);
@@ -735,22 +756,24 @@ window.changeDetailServer = function(season = 1, episode = 1) {
         iframe.removeAttribute("allowfullscreen");
     }
     
-    // Error detection
-    iframe.onload = function() {
-        setTimeout(() => {
-            try {
-                const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-                if (iframeDoc && iframeDoc.body && iframeDoc.body.innerHTML.length === 0) {
-                    console.warn(`Empty iframe from ${server} - sandbox may be blocking`);
-                    showSandboxWarning(server);
+    // Error detection - only if iframe exists
+    if(iframe) {
+        iframe.onload = function() {
+            setTimeout(() => {
+                try {
+                    const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+                    if (iframeDoc && iframeDoc.body && iframeDoc.body.innerHTML.length === 0) {
+                        console.warn(`Empty iframe from ${server} - sandbox may be blocking`);
+                        showSandboxWarning(server);
+                    }
+                } catch (e) {
+                    // Cross-origin error expected - ignore
                 }
-            } catch (e) {
-                // Cross-origin error expected - ignore
-            }
-        }, 2000);
-    };
-    
-    iframe.src = url;
+            }, 2000);
+        };
+        
+        iframe.src = url;
+    }
     
     if (typeof window.saveWatchProgress === 'function') {
         window.saveWatchProgress(currentItem, type === 'tv' ? season : null, type === 'tv' ? episode : null);
@@ -758,13 +781,18 @@ window.changeDetailServer = function(season = 1, episode = 1) {
 }
 
 window.onSeasonChange = function() {
-    currentSeason = parseInt(document.getElementById('season-select').value);
-    renderEpisodes(); 
+    const seasonSelect = document.getElementById('season-select');
+    if(seasonSelect) {
+        currentSeason = parseInt(seasonSelect.value);
+        renderEpisodes(); 
+    }
 }
 
 window.renderEpisodes = function() {
     const seasonSelect = document.getElementById('season-select');
     const grid = document.getElementById('episode-grid');
+    if(!seasonSelect || !grid) return;
+    
     grid.innerHTML = '';
     
     const epCount = parseInt(seasonSelect.options[seasonSelect.selectedIndex]?.dataset.epCount || 12);
@@ -790,6 +818,8 @@ window.renderEpisodes = function() {
 
 function populateSeasons(seasons) {
     const seasonSelect = document.getElementById('season-select');
+    if(!seasonSelect) return;
+    
     seasonSelect.innerHTML = '';
     seasons.forEach(s => {
         if (s.season_number > 0) { 
@@ -811,7 +841,7 @@ function populateSeasons(seasons) {
 
 function renderMovieEpisode() {
     const grid = document.getElementById('episode-grid');
-    grid.innerHTML = '<div class="ep-box active" onclick="changeDetailServer(1,1)">Movie</div>';
+    if(grid) grid.innerHTML = '<div class="ep-box active" onclick="changeDetailServer(1,1)">Movie</div>';
 }
 
 /* =========================================
@@ -831,49 +861,62 @@ const CATEGORY_ENDPOINTS = {
 function toggleClearButton(query) {
     const btn = document.querySelector('.search-clear-btn');
     if(btn) {
-        if (query && query.length > 0) {
-            btn.style.display = 'block';
-        } else {
-            btn.style.display = 'none';
-        }
+        btn.style.display = (query && query.length > 0) ? 'block' : 'none';
     }
 }
 
 window.openSearchModal = () => {
-    document.getElementById('search-modal').style.display = 'flex';
+    const modal = document.getElementById('search-modal');
+    if(!modal) return;
+    modal.style.display = 'flex';
     const input = document.getElementById('search-input');
-    input.focus();
-    toggleClearButton(input.value);
+    if(input) {
+        input.focus();
+        toggleClearButton(input.value);
+    }
     
-    document.getElementById('search-results').onscroll = handleBrowseScroll;
+    const results = document.getElementById('search-results');
+    if(results) results.onscroll = handleBrowseScroll;
 
-    if (!input.value.trim()) {
+    const inputCheck = document.getElementById('search-input');
+    if (!inputCheck || !inputCheck.value.trim()) {
         resetBrowseState('all');
     }
 };
 
-window.closeSearchModal = () => { document.getElementById('search-modal').style.display = 'none'; };
+window.closeSearchModal = () => { 
+    const modal = document.getElementById('search-modal');
+    if(modal) modal.style.display = 'none'; 
+};
 
 window.handleSearchInput = () => {
-    const query = document.getElementById('search-input').value;
-    toggleClearButton(query);
-    window.searchTMDB();
+    const input = document.getElementById('search-input');
+    if(input) {
+        toggleClearButton(input.value);
+        window.searchTMDB();
+    }
 };
 
 window.clearSearchInput = () => {
     const input = document.getElementById('search-input');
-    input.value = '';
-    input.focus();
-    toggleClearButton(''); 
-    resetBrowseState(browseState.category); 
+    if(input) {
+        input.value = '';
+        input.focus();
+        toggleClearButton(''); 
+        resetBrowseState(browseState.category); 
+    }
 };
 
 window.setSearchFilter = function(type, btn) {
     document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
     btn.classList.add('active');
-    const input = document.getElementById('search-input').value.trim();
-    if (input) { browseState.category = type; window.searchTMDB(); } 
-    else { resetBrowseState(type); }
+    const input = document.getElementById('search-input');
+    if(input && input.value.trim()) { 
+        browseState.category = type; 
+        window.searchTMDB(); 
+    } else { 
+        resetBrowseState(type); 
+    }
 };
 
 async function resetBrowseState(category) {
@@ -882,8 +925,9 @@ async function resetBrowseState(category) {
     browseState.hasMore = true;
     browseState.isLoading = false;
     const container = document.getElementById('search-results');
-    container.innerHTML = ''; 
-    document.getElementById('search-heading').innerText = category === 'all' ? 'Trending' : category.toUpperCase();
+    const heading = document.getElementById('search-heading');
+    if(container) container.innerHTML = ''; 
+    if(heading) heading.innerText = category === 'all' ? 'Trending' : category.toUpperCase();
     await loadMoreBrowseResults();
 }
 
@@ -905,37 +949,41 @@ async function loadMoreBrowseResults() {
 
 function handleBrowseScroll() {
     const container = document.getElementById('search-results');
-    if(container.scrollTop + container.clientHeight >= container.scrollHeight - 100) {
-        if (!document.getElementById('search-input').value.trim()) loadMoreBrowseResults();
+    if(container && container.scrollTop + container.clientHeight >= container.scrollHeight - 100) {
+        const input = document.getElementById('search-input');
+        if(!input || !input.value.trim()) loadMoreBrowseResults();
     }
 }
 
 function renderBrowseResults(items) {
     const container = document.getElementById('search-results');
+    if(!container) return;
     items.forEach(item => {
         if(!item.poster_path) return;
         const card = document.createElement('div');
         card.className = 'movie-card';
         card.onclick = () => { closeSearchModal(); showDetailView(item); };
-        card.innerHTML = `<img src="${POSTER_URL}${item.poster_path}"><div class="card-title">${item.title || item.name}</div>`;
+        card.innerHTML = `<img src="${POSTER_URL}${item.poster_path}" onerror="this.src='placeholder.jpg'"><div class="card-title">${item.title || item.name}</div>`;
         container.appendChild(card);
     });
 }
 
 window.searchTMDB = async function() {
-    const query = document.getElementById('search-input').value;
-    if (!query.trim()) { resetBrowseState(browseState.category); return; }
+    const input = document.getElementById('search-input');
+    if(!input || !input.value.trim()) { resetBrowseState(browseState.category); return; }
     try {
+        const query = input.value;
         const res = await fetch(`${BASE_URL}/search/multi?api_key=${API_KEY}&query=${query}`);
         const data = await res.json();
         const container = document.getElementById('search-results');
+        if(!container) return;
         container.innerHTML = '';
         data.results.forEach(item => {
             if(!item.poster_path) return;
             const card = document.createElement('div');
             card.className = 'movie-card';
             card.onclick = () => { closeSearchModal(); showDetailView(item); };
-            card.innerHTML = `<img src="${POSTER_URL}${item.poster_path}"><div class="card-title">${item.title||item.name}</div>`;
+            card.innerHTML = `<img src="${POSTER_URL}${item.poster_path}" onerror="this.src='placeholder.jpg'"><div class="card-title">${item.title||item.name}</div>`;
             container.appendChild(card);
         });
     } catch(e) {}
@@ -968,16 +1016,11 @@ window.addEventListener('click', function(e) {
     }
 });
 
-const mobCatBtn = document.getElementById('mobileCategoryBtn');
-if(mobCatBtn) mobCatBtn.onclick = () => document.getElementById('categoryModal').style.display = 'flex';
-const closeCatModal = document.getElementById('closeCategoryModal');
-if(closeCatModal) closeCatModal.onclick = () => document.getElementById('categoryModal').style.display = 'none';
-
 /* Restored Remote Logic */
 function setupTvRemoteLogic() {
     window.addEventListener('keydown', (e) => {
         const focused = document.activeElement;
-        const isInputActive = focused.tagName === 'INPUT' || focused.tagName === 'TEXTAREA';
+        const isInputActive = focused && (focused.tagName === 'INPUT' || focused.tagName === 'TEXTAREA');
 
         if (e.key === 'Escape' || e.key === 'Backspace' || e.key === 'Back' || e.key === 'Exit') {
             if (e.key === 'Backspace' && isInputActive) return;
@@ -1019,6 +1062,18 @@ document.addEventListener('DOMContentLoaded', () => {
     if (toggleBtn) {
         const storedSetting = localStorage.getItem("sandboxEnabled");
         toggleBtn.checked = storedSetting !== "false";
+    }
+    
+    // MOBILE CATEGORY BUTTONS - MOVED INSIDE DOMContentLoaded
+    const mobCatBtn = document.getElementById('mobileCategoryBtn');
+    const categoryModal = document.getElementById('categoryModal');
+    const closeCatModal = document.getElementById('closeCategoryModal');
+    
+    if(mobCatBtn && categoryModal) {
+        mobCatBtn.onclick = () => categoryModal.style.display = 'flex';
+    }
+    if(closeCatModal && categoryModal) {
+        closeCatModal.onclick = () => categoryModal.style.display = 'none';
     }
     
     if (typeof channels !== 'undefined') {
