@@ -550,11 +550,17 @@ function closeDetailView() {
 
 /* --- ADDED: Helper to toggle Sandbox Mode (Ad-Block) --- */
 window.toggleSandbox = function() {
+    // 1. Get the specific checkbox from the HTML
     const toggle = document.getElementById('sandbox-toggle');
+    if (!toggle) return;
+
+    // 2. Get the new state (checked = ON/Block Ads, unchecked = OFF/Allow Ads)
     const newState = toggle.checked; 
+    
+    // 3. Save to storage
     localStorage.setItem("sandboxEnabled", newState);
     
-    // Refresh player
+    // 4. Refresh player to apply the new sandbox attribute immediately
     changeDetailServer(currentSeason, currentEpisode);
 };
 
@@ -598,19 +604,20 @@ function changeDetailServer(season = 1, episode = 1) {
     // --- START SANDBOX AD-BLOCK LOGIC ---
     // 1. Get setting (Default to true/ON if not found)
     const storedSetting = localStorage.getItem("sandboxEnabled");
-    const isSandboxEnabled = storedSetting === null ? true : storedSetting === "true";
+    // Only disable if explicitly set to "false" string, otherwise true
+    const isSandboxEnabled = storedSetting !== "false"; 
 
-    // 2. Sync Toggle UI
+    // 2. Sync Toggle UI (if button exists in DOM)
     if (toggleBtn) {
         toggleBtn.checked = isSandboxEnabled;
     }
 
-    // 3. Apply Attribute
+    // 3. Apply Attribute to Iframe
     if (isSandboxEnabled) {
-        // Blocks popups and redirects
+        // Blocks popups and redirects = NO ADS
         iframe.setAttribute("sandbox", "allow-scripts allow-same-origin allow-presentation");
     } else {
-        // Removes restrictions
+        // Removes restrictions (Ads allowed, use if video breaks)
         iframe.removeAttribute("sandbox");
     }
     // --- END SANDBOX LOGIC ---
@@ -969,12 +976,12 @@ document.addEventListener('DOMContentLoaded', () => {
     setupTvRemoteLogic();
     checkLoginState(); 
     
-    // --- Initialize Sandbox Toggle State ---
+    // --- Initialize Sandbox Toggle State (if present in DOM) ---
     const toggleBtn = document.getElementById('sandbox-toggle');
     if (toggleBtn) {
         const storedSetting = localStorage.getItem("sandboxEnabled");
-        // Default to true (ON) if not set
-        toggleBtn.checked = storedSetting === null ? true : storedSetting === "true";
+        // Default to true (ON) if not set, or if set to "true"
+        toggleBtn.checked = storedSetting !== "false";
     }
     
     if (typeof channels !== 'undefined') {
