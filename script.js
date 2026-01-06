@@ -500,7 +500,7 @@ function handleCategoryScroll() {
 }
 
 /* =========================================
-   5. DETAIL VIEW LOGIC
+   5. DETAIL VIEW LOGIC (UPDATED WITH AD-BLOCK)
    ========================================= */
 let currentItem = null;
 let currentDetails = null;
@@ -548,6 +548,19 @@ function closeDetailView() {
     document.getElementById('detail-video').src = '';
 }
 
+/* --- ADDED: Helper to toggle Sandbox Mode --- */
+window.toggleSandbox = function() {
+    const current = localStorage.getItem("sandboxEnabled") !== "false"; 
+    const newState = !current;
+    localStorage.setItem("sandboxEnabled", newState);
+    
+    // Refresh player to apply
+    changeDetailServer(currentSeason, currentEpisode);
+    
+    alert(`Sandbox Mode (Ad-Block) is now ${newState ? 'ON' : 'OFF'}`);
+};
+
+/* --- UPDATED: Server Change with Sandbox Logic --- */
 function changeDetailServer(season = 1, episode = 1) {
     if(!currentItem) return;
     
@@ -581,7 +594,21 @@ function changeDetailServer(season = 1, episode = 1) {
         url = type==='tv' ? `https://net20.cc/embed/tv/${id}/${season}/${episode}` : `https://net20.cc/embed/movie/${id}`;
     }
 
-    document.getElementById('detail-video').src = url;
+    const iframe = document.getElementById('detail-video');
+
+    // --- START SANDBOX AD-BLOCK LOGIC ---
+    const isSandboxEnabled = localStorage.getItem("sandboxEnabled") !== "false"; // Default true
+
+    if (isSandboxEnabled) {
+        // Prevents popups and redirects = NO ADS
+        iframe.setAttribute("sandbox", "allow-scripts allow-same-origin allow-presentation");
+    } else {
+        // Unrestricted mode
+        iframe.removeAttribute("sandbox");
+    }
+    // --- END SANDBOX LOGIC ---
+
+    iframe.src = url;
     
     if (typeof window.saveWatchProgress === 'function') {
         window.saveWatchProgress(currentItem, type === 'tv' ? season : null, type === 'tv' ? episode : null);
