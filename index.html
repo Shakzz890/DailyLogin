@@ -190,6 +190,13 @@
           </div>
           <div class="server-select-container">
                <label>Source:</label>
+                 <div class="sandbox-toggle-wrapper">
+        <label class="switch">
+            <input type="checkbox" id="sandbox-toggle" checked onchange="toggleSandbox()">
+            <span class="slider round"></span>
+        </label>
+        <span>Block Ads (Turn off if video fails)</span>
+    </div>
                <select id="detail-server" onchange="changeDetailServer()">
                    <option value="vidsrc.to">Server 1 (VidSrc)</option>
                    <option value="vidsrc.me">Server 2 (Me)</option>

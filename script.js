@@ -548,16 +548,14 @@ function closeDetailView() {
     document.getElementById('detail-video').src = '';
 }
 
-/* --- ADDED: Helper to toggle Sandbox Mode --- */
+/* --- ADDED: Helper to toggle Sandbox Mode (Ad-Block) --- */
 window.toggleSandbox = function() {
-    const current = localStorage.getItem("sandboxEnabled") !== "false"; 
-    const newState = !current;
+    const toggle = document.getElementById('sandbox-toggle');
+    const newState = toggle.checked; 
     localStorage.setItem("sandboxEnabled", newState);
     
-    // Refresh player to apply
+    // Refresh player
     changeDetailServer(currentSeason, currentEpisode);
-    
-    alert(`Sandbox Mode (Ad-Block) is now ${newState ? 'ON' : 'OFF'}`);
 };
 
 /* --- UPDATED: Server Change with Sandbox Logic --- */
@@ -595,15 +593,24 @@ function changeDetailServer(season = 1, episode = 1) {
     }
 
     const iframe = document.getElementById('detail-video');
+    const toggleBtn = document.getElementById('sandbox-toggle');
 
     // --- START SANDBOX AD-BLOCK LOGIC ---
-    const isSandboxEnabled = localStorage.getItem("sandboxEnabled") !== "false"; // Default true
+    // 1. Get setting (Default to true/ON if not found)
+    const storedSetting = localStorage.getItem("sandboxEnabled");
+    const isSandboxEnabled = storedSetting === null ? true : storedSetting === "true";
 
+    // 2. Sync Toggle UI
+    if (toggleBtn) {
+        toggleBtn.checked = isSandboxEnabled;
+    }
+
+    // 3. Apply Attribute
     if (isSandboxEnabled) {
-        // Prevents popups and redirects = NO ADS
+        // Blocks popups and redirects
         iframe.setAttribute("sandbox", "allow-scripts allow-same-origin allow-presentation");
     } else {
-        // Unrestricted mode
+        // Removes restrictions
         iframe.removeAttribute("sandbox");
     }
     // --- END SANDBOX LOGIC ---
@@ -961,6 +968,14 @@ document.addEventListener('DOMContentLoaded', () => {
     setupCategoryTabs();
     setupTvRemoteLogic();
     checkLoginState(); 
+    
+    // --- Initialize Sandbox Toggle State ---
+    const toggleBtn = document.getElementById('sandbox-toggle');
+    if (toggleBtn) {
+        const storedSetting = localStorage.getItem("sandboxEnabled");
+        // Default to true (ON) if not set
+        toggleBtn.checked = storedSetting === null ? true : storedSetting === "true";
+    }
     
     if (typeof channels !== 'undefined') {
         sortedChannels = Object.entries(channels).sort((a, b) => a[1].name.localeCompare(b[1].name));
