@@ -32,13 +32,28 @@
           <span class="logo-text">SHAKZZ<span style="color:#e50914;">TV</span></span>
           <span class="close-sidebar" onclick="toggleSidebar()">×</span>
       </div>
-      <div class="sidebar-menu">
-          <a href="#" onclick="switchView('home')" class="active"><i class="fa-solid fa-house"></i> Home</a>
-          <a href="#" onclick="openSearchModal()"><i class="fa-regular fa-compass"></i> Explore</a>
-          <a href="#" onclick="switchView('live')"><i class="fa-solid fa-tv"></i> Live TV</a>
-          <a href="#" onclick="openInfoModal('updates')"><i class="fa-solid fa-bell"></i> Updates</a>
-          <a href="#" onclick="openInfoModal('contact')"><i class="fa-solid fa-envelope"></i> Contact</a>
-      </div>
+   <div class="sidebar-menu">
+    <a href="#" class="sidebar-link active" data-view="home" onclick="switchView('home')">
+        <i class="fa-solid fa-house"></i> Home
+    </a>
+
+    <a href="#" class="sidebar-link" data-view="explore" onclick="openSearchModal()">
+        <i class="fa-regular fa-compass"></i> Explore
+    </a>
+
+    <a href="#" class="sidebar-link" data-view="live" onclick="switchView('live')">
+        <i class="fa-solid fa-tv"></i> Live TV
+    </a>
+
+    <a href="#" class="sidebar-link" data-view="updates" onclick="openInfoModal('updates')">
+        <i class="fa-solid fa-bell"></i> Updates
+    </a>
+
+    <a href="#" class="sidebar-link" data-view="contact" onclick="openInfoModal('contact')">
+        <i class="fa-solid fa-envelope"></i> Contact
+    </a>
+</div>
+
       <div class="sidebar-footer">
           <p>Shakzz TV © 2025</p>
       </div>
@@ -112,6 +127,14 @@
       <div class="row"><h2 onclick="openCategory('airing_today', 'Latest Updates')"><span class="section-indicator"></span> Latest Updates <i class="fa-solid fa-chevron-right"></i></h2><div class="list" id="latest-list"></div></div>
       <div class="row"><h2 onclick="openCategory('kdrama', 'Top K-Drama')"><span class="section-indicator"></span> Top K-Drama <i class="fa-solid fa-chevron-right"></i></h2><div class="list" id="kdrama-list"></div></div>
       <div class="row"><h2 onclick="openCategory('cdrama', 'Top C-Drama')"><span class="section-indicator"></span> Top C-Drama <i class="fa-solid fa-chevron-right"></i></h2><div class="list" id="cdrama-list"></div></div>
+<div class="row">
+  <h2 onclick="openCategory('filipino', 'Top Filipino Drama')">
+    <span class="section-indicator"></span>
+    Top Filipino Drama <i class="fa-solid fa-chevron-right"></i>
+  </h2>
+  <div class="list" id="filipino-list"></div>
+</div>
+
       <div class="row"><h2 onclick="openCategory('movie', 'Trending Movies')"><span class="section-indicator"></span> Trending Movies <i class="fa-solid fa-chevron-right"></i></h2><div class="list" id="movies-list"></div></div>
       <div class="row"><h2 onclick="openCategory('tv', 'Trending TV Shows')"><span class="section-indicator"></span> Trending TV Shows <i class="fa-solid fa-chevron-right"></i></h2><div class="list" id="tvshows-list"></div></div>
       <div class="row"><h2 onclick="openCategory('anime', 'Trending Anime')"><span class="section-indicator"></span> Trending Anime <i class="fa-solid fa-chevron-right"></i></h2><div class="list" id="anime-list"></div></div>
@@ -171,81 +194,66 @@
       </div>
   </div>
 
-  <div id="detail-view" class="detail-view">
-      <div class="detail-video-container">
-      <div id="detail-poster-section" class="detail-poster-section">
-    <img id="detail-poster-img">
-    <div class="poster-overlay"></div>
-
-    <div class="poster-actions">
-        <button class="play-main-btn" onclick="startPlayback()">
-            <i class="fa-solid fa-play"></i> Play
-        </button>
-
-        <button class="fav-main-btn" onclick="toggleDetailFavorite(this)">
-            <i class="fa-regular fa-heart"></i> Watchlist
-        </button>
+  <div id="detail-view">
+    <div class="detail-backdrop-container">
+      <img id="detail-backdrop-img">
+      <div class="backdrop-gradient"></div>
+      <button class="close-detail-btn" onclick="closeDetailView()">✕</button>
     </div>
-</div>
 
-        <div id="video-cover" class="video-cover" onclick="hideVideoCover()">
-    <img id="video-cover-img" src="" alt="Cover">
-    <div class="play-icon">
-        <i class="fa-solid fa-play"></i>
-    </div>
-</div>
+    <div class="detail-info-layer">
+      <h1 id="detail-title"></h1>
 
-          <iframe id="detail-video" allowfullscreen></iframe>
-          <div class="detail-close" onclick="closeDetailView()"><i class="fa-solid fa-chevron-down"></i></div>
+      <div class="detail-meta-row">
+        <span id="detail-date"></span>
+        <span>⭐ <span id="detail-rating"></span></span>
       </div>
-      <div class="detail-content">
-          <div class="detail-header-group">
-            <h1 id="detail-title">Title Here</h1>
-            <div class="detail-meta">
-                <span class="badge" id="detail-date">2025</span>
-                <span class="badge">HD</span>
-                <span class="badge" id="detail-lang">EN</span>
-            </div>
-          </div>
-          <div class="detail-desc">
-              <p id="detail-overview">...</p>
-          </div>
-          <div class="server-select-container">
-               <label>Source:</label>
-                 <div class="sandbox-toggle-wrapper">
-        <label class="switch">
-            <input type="checkbox" id="sandbox-toggle" checked onchange="toggleSandbox()">
-            <span class="slider round"></span>
-        </label>
-        <span>Block Ads (Turn off if video fails)</span>
-    </div>
-               <select id="detail-server" onchange="changeDetailServer()">
-                   <option value="vidsrc.to">Server 1 (VidSrc)</option>
-                   <option value="vidsrc.me">Server 2 (Me)</option>
-                   <option value="vidlink.pro">Server 3 (VidLink)</option>
-                   <option value="superembed.stream">Server 4 (Super)</option>
-                   <option value="2embed.cc">Server 5 (2Embed)</option>
-                   <option value="vidsrc.cc">Server 6 (CC)</option>
-                   <option value="vidsrc.xyz">Server 7 (XYZ)</option>
-                   <option value="vidsrc.vip">Server 8 (VIP)</option>
-                   <option value="vidsrc.net">Server 9 (Net)</option>
-               </select>
-          </div>
-          <div class="action-bar">
-              <div class="action-item" onclick="toggleDetailFavorite(this)"><i class="fa-regular fa-heart"></i><span>Favorite</span></div>
-              <div class="action-item" onclick="shareContent()"><i class="fa-solid fa-share-nodes"></i><span>Share</span></div>
-              <div class="action-item" onclick="downloadContent()"><i class="fa-solid fa-download"></i><span>Download</span></div>
-          </div>
-          <div class="episode-section">
-              <div class="episode-filters" style="display:none;"> 
-                  <select id="season-select" onchange="onSeasonChange()"></select>
-                  <select id="range-select" onchange="renderEpisodes()"></select>
-              </div>
-              <div class="episode-grid" id="episode-grid"></div>
-          </div>
+
+      <div id="detail-genres-list"></div>
+      <p id="detail-overview"></p>
+
+      <div class="detail-actions">
+        <button class="play-btn-primary" onclick="playContent()">
+          <i class="fas fa-play"></i> Play
+        </button>
+        <button class="watchlist-btn">
+          <i class="far fa-bookmark"></i> My List
+        </button>
       </div>
+
+      <div id="player-section">
+<div id="player-overlay" class="player-overlay">
+  <div class="player-overlay-inner">
+    <button class="close-player-btn" onclick="closePlayerOverlay()">✕</button>
+    <div class="iframe-wrapper">
+      <iframe id="overlay-video" allowfullscreen></iframe>
+    </div>
   </div>
+</div>
 
+        <div class="server-select-container">
+          <select id="detail-server" onchange="changeDetailServer(currentSeason,currentEpisode)">
+            <option value="vidsrc.to">Server 1</option>
+            <option value="vidsrc.me">Server 2</option>
+            <option value="vidlink.pro">Server 3</option>
+<option value="viu.com">VIU</option>
+          </select>
+          <select id="season-select"></select>
+        </div>
+
+        <div class="iframe-wrapper">
+          <iframe id="detail-video" allowfullscreen></iframe>
+        </div>
+
+        <div id="episode-grid" class="episode-grid"></div>
+      </div>
+
+      <div class="recommendations-section">
+        <h3>You may also like</h3>
+        <div id="recommendations-grid" class="recommendations-grid"></div>
+      </div>
+    </div>
+  </div>
   <div id="category-view" class="category-view">
       <div class="category-header">
           <i class="fa-solid fa-arrow-left" onclick="closeCategory()"></i>
@@ -290,40 +298,25 @@
         <button class="filter-pill" onclick="setSearchFilter('anime', this)">Anime</button>
         <button class="filter-pill" onclick="setSearchFilter('kdrama', this)">K-Drama</button>
         <button class="filter-pill" onclick="setSearchFilter('cdrama', this)">C-Drama</button>
-    </div>
+        
+    </div><button class="filter-pill" onclick="setSearchFilter('filipino', this)">
+  Filipino
+</button>
+
     <div class="results-container">
         <h3 id="search-heading">Popular Search</h3>
         <div class="results" id="search-results"></div>
     </div>
   </div>
 
+<div class="badge-overlay badge-ph">PH</div>
+
+
   <script src="channels.js"></script>
-  <script src="script.js"></script>
+  <script src="script.js"></script> 
   <script type="module" src="auth.js"></script>
 
   <script>
-      function switchView(viewName) {
-          const home = document.getElementById('home-view');
-          const live = document.getElementById('live-view');
-          const sidebar = document.getElementById('main-sidebar');
-          const overlay = document.getElementById('overlay');
-          
-          if(viewName === 'live') {
-              home.style.display = 'none';
-              live.style.display = 'flex'; 
-              if(window.innerWidth < 1024) live.style.flexDirection = 'column';
-              if(window.jwplayer) { try { jwplayer().resize(); } catch(e){} }
-          } else {
-              home.style.display = 'block';
-              live.style.display = 'none';
-              if(window.jwplayer) { try { jwplayer().stop(); } catch(e){} }
-          }
-          if(window.innerWidth < 1024) {
-              sidebar.classList.remove('open');
-              overlay.classList.remove('active');
-          }
-      }
-      
       let userId = localStorage.getItem('visitor_uid') || Math.random().toString(36).substring(7);
       localStorage.setItem('visitor_uid', userId);
       async function updateOnlineCount() {
