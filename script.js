@@ -1,3 +1,5 @@
+
+
 /* =========================================================
    SHAKZZ TV — MERGED SCRIPT
    (Original Redflix + Optimized Fix Combined)
@@ -19,19 +21,19 @@ const IMG_URL = 'https://image.tmdb.org/t/p/original';
 const POSTER_URL = 'https://image.tmdb.org/t/p/w300';
 const PLACEHOLDER_IMG = 'logo.png';
 
-// Provider-specific sandbox policies - optimized for compatibility
+// Provider-specific sandbox policies
 const PROVIDER_SANDBOX_POLICY = {
+    'vidsrc.cc': "allow-scripts allow-same-origin allow-presentation allow-forms",
     'vidsrc.to': "allow-scripts allow-same-origin allow-presentation allow-forms allow-pointer-lock",
     'vidsrc.me': "allow-scripts allow-same-origin allow-presentation allow-forms",
     'vidlink.pro': "allow-scripts allow-same-origin allow-presentation allow-forms allow-pointer-lock allow-orientation-lock",
     'superembed.stream': "allow-scripts allow-same-origin allow-presentation",
     '2embed.cc': "allow-scripts allow-same-origin allow-forms",
-    'vidsrc.cc': "allow-scripts allow-same-origin allow-presentation allow-forms",
     'vidsrc.xyz': "allow-scripts allow-same-origin allow-presentation",
     'vidsrc.vip': "allow-scripts allow-same-origin allow-presentation allow-forms",
-    'vidsrc.net': "allow-scripts allow-same-origin allow-presentation allow-forms",
     'net20.cc': "allow-scripts allow-same-origin allow-forms allow-presentation"
 };
+
 
 let currentSeason = 1;
 let currentEpisode = 1;
@@ -41,6 +43,8 @@ let currentSlideIndex = 0;
 let lastSidebarView = 'home';
 let cinemaTimer = null;
 let sliderInterval = null;
+let isPlayerOpen = false;
+
 
 
 
@@ -443,11 +447,14 @@ function playContent() {
 
     if (!overlay || !iframe || !currentItem) return;
 
+    isPlayerOpen = true;
+
     overlay.style.display = 'flex';
     document.body.style.overflow = 'hidden';
 
     changeDetailServer(currentSeason, currentEpisode, iframe);
 }
+
 
 
 
@@ -717,8 +724,28 @@ async function showDetailView(item) {
             fetch(`${BASE_URL}/${type}/${item.id}/recommendations?api_key=${API_KEY}`).then(r => r.json())
         ]);
 
-        populateSeasons(details.seasons || []);
-        renderMovieEpisode();
+        if (currentDetail.type === 'tv') {
+    document.getElementById('season-select').style.display = 'block';
+    populateSeasons(details.seasons || []);
+} else {
+    document.getElementById('season-select').style.display = 'none';
+    document.getElementById('episode-grid').innerHTML =
+        '<button class="ep-btn active" onclick="playContent()">Movie</button>';
+}
+
+
+document.getElementById('episode-search')?.addEventListener('input', e => {
+    const val = parseInt(e.target.value);
+    if (!val || val < 1) return;
+
+    playEpisode(val);
+
+    document
+      .querySelector(`[onclick="playEpisode(${val})"]`)
+      ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+});
+
+
 
         const recGrid = document.getElementById('recommendations-grid');
         recGrid.innerHTML = '';
@@ -761,6 +788,20 @@ function loadSeasons(id) {
     // Placeholder for additional season loading logic
     // Already populated via populateSeasons() in showDetailView
 }
+
+function togglePill(el) {
+  document.querySelectorAll('.pill-dropdown').forEach(p => {
+    if (p !== el) p.classList.remove('open');
+  });
+  el.classList.toggle('open');
+}
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('.pill-dropdown')) {
+    document.querySelectorAll('.pill-dropdown').forEach(p => p.classList.remove('open'));
+  }
+});
+
 
 function onSeasonChange() {
     const seasonSelect = document.getElementById('season-select');
@@ -876,6 +917,18 @@ function changeDetailServer(season = 1, episode = 1, targetIframe = null) {
     markEpisodeWatched();
 }
 
+function toggleSandbox() {
+    const toggle = document.getElementById('sandbox-toggle');
+    if (!toggle) return;
+    
+    const newState = toggle.checked; 
+    localStorage.setItem("sandboxEnabled", newState);
+    
+    // Reload the player with the new setting
+    changeDetailServer(currentDetail.season, currentDetail.episode);
+}
+
+
 function populateSeasons(seasons) {
     const seasonSelect = document.getElementById('season-select');
     if(!seasonSelect) return;
@@ -959,11 +1012,14 @@ function closePlayerOverlay() {
     const overlay = document.getElementById('player-overlay');
     const iframe = document.getElementById('overlay-video');
 
+    isPlayerOpen = false;
+
     if (iframe) iframe.src = '';
     if (overlay) overlay.style.display = 'none';
 
     document.body.style.overflow = '';
 }
+
 
 
 window.shareContent = function() {
@@ -1289,7 +1345,7 @@ document.getElementById('skipIntroBtn')?.addEventListener('click', () => {
         const playerSection = document.getElementById('player-section');
 
         // ❌ Do NOT run cinema mode if player is hidden
-        if (!playerSection || playerSection.style.display !== 'block') return;
+        if (!isPlayerOpen) return;
 
         document.body.classList.remove('cinema-hide');
         clearTimeout(cinemaTimer);
@@ -1369,4 +1425,3 @@ document.addEventListener('DOMContentLoaded', () => {
         CutieLoader.hide(); // 🛡️ GUARANTEED HIDE
     }
 });
-

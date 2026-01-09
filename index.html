@@ -32,28 +32,23 @@
           <span class="logo-text">SHAKZZ<span style="color:#e50914;">TV</span></span>
           <span class="close-sidebar" onclick="toggleSidebar()">×</span>
       </div>
-   <div class="sidebar-menu">
-    <a href="#" class="sidebar-link active" data-view="home" onclick="switchView('home')">
-        <i class="fa-solid fa-house"></i> Home
-    </a>
-
-    <a href="#" class="sidebar-link" data-view="explore" onclick="openSearchModal()">
-        <i class="fa-regular fa-compass"></i> Explore
-    </a>
-
-    <a href="#" class="sidebar-link" data-view="live" onclick="switchView('live')">
-        <i class="fa-solid fa-tv"></i> Live TV
-    </a>
-
-    <a href="#" class="sidebar-link" data-view="updates" onclick="openInfoModal('updates')">
-        <i class="fa-solid fa-bell"></i> Updates
-    </a>
-
-    <a href="#" class="sidebar-link" data-view="contact" onclick="openInfoModal('contact')">
-        <i class="fa-solid fa-envelope"></i> Contact
-    </a>
-</div>
-
+      <div class="sidebar-menu">
+        <a href="#" class="sidebar-link active" data-view="home" onclick="switchView('home')">
+            <i class="fa-solid fa-house"></i> Home
+        </a>
+        <a href="#" class="sidebar-link" data-view="explore" onclick="openSearchModal()">
+            <i class="fa-regular fa-compass"></i> Explore
+        </a>
+        <a href="#" class="sidebar-link" data-view="live" onclick="switchView('live')">
+            <i class="fa-solid fa-tv"></i> Live TV
+        </a>
+        <a href="#" class="sidebar-link" data-view="updates" onclick="openInfoModal('updates')">
+            <i class="fa-solid fa-bell"></i> Updates
+        </a>
+        <a href="#" class="sidebar-link" data-view="contact" onclick="openInfoModal('contact')">
+            <i class="fa-solid fa-envelope"></i> Contact
+        </a>
+      </div>
       <div class="sidebar-footer">
           <p>Shakzz TV © 2025</p>
       </div>
@@ -69,9 +64,7 @@
         <div id="viewerCounter" class="view-count" style="margin-right: 10px; color: #e50914; font-weight: bold; font-size: 0.9rem;">
             <i class="fa fa-eye"></i> <span id="live-counter">...</span>
         </div>
-        
         <div class="search-trigger" onclick="openSearchModal()"><i class="fa-solid fa-magnifying-glass"></i></div>
-        
         <div class="auth-wrapper">
             <div id="logged-out-state">
                 <button class="login-btn" onclick="toggleAuthDropdown('login')">
@@ -79,21 +72,18 @@
                 </button>
                 <div class="auth-dropdown" id="login-dropdown">
                     <div class="dropdown-header">Sign in to save your watch history.</div>
-                    
                     <div class="social-item" onclick="loginGoogle()">
                         <i class="fa-brands fa-google" style="color:#DB4437;"></i> Google
                     </div>
                     <div class="social-item" onclick="loginGithub()">
                         <i class="fa-brands fa-github" style="color:#fff;"></i> Github
                     </div>
-
                     <div style="border-top: 1px solid #333; margin: 5px 0;"></div>
                     <div class="dropdown-footer" style="font-size: 0.8rem; color: #aaa; text-align: center; padding: 5px;">
                         More coming soon...
                     </div>
                 </div>
             </div>
-
             <div id="logged-in-state" style="display:none;">
                 <img src="https://i.pinimg.com/736x/8b/16/7a/8b167af653c2399dd93b952a48740620.jpg" alt="Profile" class="nav-avatar" onclick="toggleAuthDropdown('profile')">
                 <div class="auth-dropdown" id="profile-dropdown">
@@ -127,14 +117,7 @@
       <div class="row"><h2 onclick="openCategory('airing_today', 'Latest Updates')"><span class="section-indicator"></span> Latest Updates <i class="fa-solid fa-chevron-right"></i></h2><div class="list" id="latest-list"></div></div>
       <div class="row"><h2 onclick="openCategory('kdrama', 'Top K-Drama')"><span class="section-indicator"></span> Top K-Drama <i class="fa-solid fa-chevron-right"></i></h2><div class="list" id="kdrama-list"></div></div>
       <div class="row"><h2 onclick="openCategory('cdrama', 'Top C-Drama')"><span class="section-indicator"></span> Top C-Drama <i class="fa-solid fa-chevron-right"></i></h2><div class="list" id="cdrama-list"></div></div>
-<div class="row">
-  <h2 onclick="openCategory('filipino', 'Top Filipino Drama')">
-    <span class="section-indicator"></span>
-    Top Filipino Drama <i class="fa-solid fa-chevron-right"></i>
-  </h2>
-  <div class="list" id="filipino-list"></div>
-</div>
-
+      <div class="row"><h2 onclick="openCategory('filipino', 'Top Filipino Drama')"><span class="section-indicator"></span> Top Filipino Drama <i class="fa-solid fa-chevron-right"></i></h2><div class="list" id="filipino-list"></div></div>
       <div class="row"><h2 onclick="openCategory('movie', 'Trending Movies')"><span class="section-indicator"></span> Trending Movies <i class="fa-solid fa-chevron-right"></i></h2><div class="list" id="movies-list"></div></div>
       <div class="row"><h2 onclick="openCategory('tv', 'Trending TV Shows')"><span class="section-indicator"></span> Trending TV Shows <i class="fa-solid fa-chevron-right"></i></h2><div class="list" id="tvshows-list"></div></div>
       <div class="row"><h2 onclick="openCategory('anime', 'Trending Anime')"><span class="section-indicator"></span> Trending Anime <i class="fa-solid fa-chevron-right"></i></h2><div class="list" id="anime-list"></div></div>
@@ -170,6 +153,7 @@
                 <i class="fas fa-times clear-btn" id="live-clear-btn" style="display:none;" onclick="clearLiveSearch()"></i>
             </div>
             <div class="category-bar"></div>
+            
             <button id="mobileCategoryBtn" class="category-dropdown-btn focusable-element">
                 <span>All Categories</span>
                 <i class="fas fa-chevron-down"></i>
@@ -221,39 +205,13 @@
         </button>
       </div>
 
-      <div id="player-section">
-<div id="player-overlay" class="player-overlay">
-  <div class="player-overlay-inner">
-    <button class="close-player-btn" onclick="closePlayerOverlay()">✕</button>
-    <div class="iframe-wrapper">
-      <iframe id="overlay-video" allowfullscreen></iframe>
-    </div>
-  </div>
-</div>
-
-        <div class="server-select-container">
-          <select id="detail-server" onchange="changeDetailServer(currentSeason,currentEpisode)">
-            <option value="vidsrc.to">Server 1</option>
-            <option value="vidsrc.me">Server 2</option>
-            <option value="vidlink.pro">Server 3</option>
-<option value="viu.com">VIU</option>
-          </select>
-          <select id="season-select"></select>
-        </div>
-
-        <div class="iframe-wrapper">
-          <iframe id="detail-video" allowfullscreen></iframe>
-        </div>
-
-        <div id="episode-grid" class="episode-grid"></div>
-      </div>
-
       <div class="recommendations-section">
         <h3>You may also like</h3>
         <div id="recommendations-grid" class="recommendations-grid"></div>
       </div>
     </div>
   </div>
+
   <div id="category-view" class="category-view">
       <div class="category-header">
           <i class="fa-solid fa-arrow-left" onclick="closeCategory()"></i>
@@ -298,10 +256,8 @@
         <button class="filter-pill" onclick="setSearchFilter('anime', this)">Anime</button>
         <button class="filter-pill" onclick="setSearchFilter('kdrama', this)">K-Drama</button>
         <button class="filter-pill" onclick="setSearchFilter('cdrama', this)">C-Drama</button>
-        
-    </div><button class="filter-pill" onclick="setSearchFilter('filipino', this)">
-  Filipino
-</button>
+        <button class="filter-pill" onclick="setSearchFilter('filipino', this)">Filipino</button>
+    </div>
 
     <div class="results-container">
         <h3 id="search-heading">Popular Search</h3>
@@ -309,8 +265,51 @@
     </div>
   </div>
 
-<div class="badge-overlay badge-ph">PH</div>
+  <div class="badge-overlay badge-ph">PH</div>
 
+  <div id="player-overlay" class="player-overlay">
+    
+    <div class="player-header">
+        <button class="close-player-btn" onclick="closePlayerOverlay()">
+            <i class="fa-solid fa-arrow-left"></i>
+        </button>
+        <span id="player-overlay-title">Loading...</span>
+    </div>
+
+    <div class="iframe-wrapper">
+      <iframe id="overlay-video" allowfullscreen></iframe>
+    </div>
+
+<div class="player-controls-bar">
+
+  <!-- SERVER -->
+  <div class="pill-dropdown" onclick="togglePill(this)">
+    <span id="server-label">Server 1</span>
+    <i class="fas fa-chevron-up"></i>
+    <div class="pill-menu">
+      <div onclick="selectServer('vidsrc.cc','Server 1')">Server 1</div>
+      <div onclick="selectServer('vidsrc.to','Server 2')">Server 2</div>
+      <div onclick="selectServer('vidsrc.me','Server 3')">Server 3</div>
+      <div onclick="selectServer('vidlink.pro','Server 4')">Server 4</div>
+      <div onclick="selectServer('viu','Server 5')">Server 5</div>
+    </div>
+  </div>
+
+  <!-- SEASON -->
+  <div class="pill-dropdown" id="season-pill" onclick="togglePill(this)">
+    <span id="season-label">Season 1</span>
+    <i class="fas fa-chevron-up"></i>
+    <div class="pill-menu" id="season-menu"></div>
+  </div>
+
+  <!-- EPISODE -->
+  <div class="pill-dropdown" id="episode-pill" onclick="togglePill(this)">
+    <span id="episode-label">Episode 1</span>
+    <i class="fas fa-chevron-up"></i>
+    <div class="pill-menu" id="episode-menu"></div>
+  </div>
+
+</div>
 
   <script src="channels.js"></script>
   <script src="script.js"></script> 
