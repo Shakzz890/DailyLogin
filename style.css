@@ -13,6 +13,11 @@
 .sidebar-footer { padding: 20px; text-align: center; color: #555; font-size: 0.8rem; margin-top: auto; }
 .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1500; display: none; }
 .overlay.active { display: block; }
+.slide {
+    background-size: cover;
+    background-position: center;
+    /* ... */
+}
 
 /* =========================================
    3. HOME VIEW STYLES
