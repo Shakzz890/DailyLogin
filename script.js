@@ -14,7 +14,7 @@ let currentDetail = {
    ========================================================= */
 const API_KEY = '4eea503176528574efd91847b7a302cc'; 
 const BASE_URL = 'https://api.themoviedb.org/3';
-const IMG_URL = 'https://image.tmdb.org/t/p/original';
+const IMG_URL = 'https://image.tmdb.org/t/p/w1280';
 const POSTER_URL = 'https://image.tmdb.org/t/p/w300';
 const PLACEHOLDER_IMG = 'logo.png';
 
@@ -91,6 +91,7 @@ let cinemaTimer = null;
 let sliderInterval = null;
 let isPlayerOpen = false;
 let currentEpisodeList = [];
+let scrollTimeout = null;
 
 
 /* --- LOADER CONTROL --- */
@@ -1423,11 +1424,20 @@ async function loadMoreBrowseResults() {
 }
 
 function handleBrowseScroll() {
-    const container = document.getElementById('search-results');
-    if (!container) return;
-    if (container.scrollTop + container.clientHeight >= container.scrollHeight - 120 && browseState.hasMore) {
-        loadMoreBrowseResults();
-    }
+    if (scrollTimeout) return; // Ignore if already waiting
+
+    scrollTimeout = setTimeout(() => {
+        const container = document.getElementById('search-results');
+        if (!container) return;
+        
+        // Increased buffer from 120 to 300 for smoother infinite load
+        if (container.scrollTop + container.clientHeight >= container.scrollHeight - 300) {
+            if(browseState.hasMore && !browseState.isLoading) {
+                loadMoreBrowseResults();
+            }
+        }
+        scrollTimeout = null;
+    }, 100); // Only check every 100ms
 }
 
 function renderBrowseResults(items) {
@@ -1646,5 +1656,33 @@ document.addEventListener('keydown', e => {
     e.preventDefault();
   }
 });
+
+// Push a state when opening modals so "Back" closes modal, not the site
+window.history.pushState({ view: 'home' }, ''); 
+
+window.onpopstate = function(event) {
+    // If a modal is open, close it and prevent navigation
+    const searchModal = document.getElementById('search-modal');
+    const detailView = document.getElementById('detail-view');
+    const playerOverlay = document.getElementById('player-overlay');
+
+    if (playerOverlay && playerOverlay.style.display === 'flex') {
+        closePlayerOverlay();
+        window.history.pushState({ view: 'detail' }, ''); // Stay on page
+        return;
+    }
+    if (detailView && detailView.style.display === 'flex') {
+        closeDetailView();
+        window.history.pushState({ view: 'home' }, ''); // Stay on page
+        return;
+    }
+    if (searchModal && searchModal.style.display === 'flex') {
+        closeSearchModal();
+        window.history.pushState({ view: 'home' }, '');
+        return;
+    }
+};
+
+
 
 
