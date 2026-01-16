@@ -267,49 +267,101 @@
 
   <div class="badge-overlay badge-ph">PH</div>
 
-  <div id="player-overlay" class="player-overlay">
-    
-    <div class="player-header">
-        <button class="close-player-btn" onclick="closePlayerOverlay()">
-            <i class="fa-solid fa-arrow-left"></i>
-        </button>
-        <span id="player-overlay-title">Loading...</span>
-    </div>
+<div id="player-overlay" class="player-overlay">
 
-    <div class="iframe-wrapper">
-      <iframe id="overlay-video" allowfullscreen></iframe>
-    </div>
-
-<div class="player-controls-bar">
-
-  <!-- SERVER -->
-  <div class="pill-dropdown" onclick="togglePill(this)">
-    <span id="server-label">Server 1</span>
-    <i class="fas fa-chevron-up"></i>
-    <div class="pill-menu">
-      <div onclick="selectServer('vidsrc.cc','Server 1')">Server 1</div>
-      <div onclick="selectServer('vidsrc.to','Server 2')">Server 2</div>
-      <div onclick="selectServer('vidsrc.me','Server 3')">Server 3</div>
-      <div onclick="selectServer('vidlink.pro','Server 4')">Server 4</div>
-      <div onclick="selectServer('viu','Server 5')">Server 5</div>
-    </div>
+  <!-- HEADER -->
+  <div class="player-header">
+    <button class="close-player-btn" onclick="closePlayerOverlay()">
+      <i class="fa-solid fa-arrow-left"></i>
+    </button>
+    <div id="player-title" class="player-title"></div>
   </div>
 
-  <!-- SEASON -->
-  <div class="pill-dropdown" id="season-pill" onclick="togglePill(this)">
-    <span id="season-label">Season 1</span>
-    <i class="fas fa-chevron-up"></i>
-    <div class="pill-menu" id="season-menu"></div>
+  <!-- VIDEO -->
+  <div class="iframe-wrapper">
+    <iframe id="overlay-video" allowfullscreen></iframe>
+  </div>
+<div class="player-controls-bar stacked">
+
+  <!-- ROW 1: SERVER + SEASON -->
+  <div class="row-server">
+
+    <!-- SERVER -->
+    <div class="pill-wrapper">
+
+      <div class="pill-dropdown" id="server-pill" onclick="togglePill(this)">
+        <div class="pill-label">
+          <span id="server-label">Server 1</span>
+          <i class="fas fa-chevron-up"></i>
+        </div>
+      </div>
+
+      <div class="pill-menu" id="server-menu" onclick="event.stopPropagation()">
+        <div class="menu-header server-header">
+          <span>Sandbox</span>
+          <label class="switch">
+            <input type="checkbox" id="sandbox-toggle">
+            <span class="slider"></span>
+          </label>
+        </div>
+        <!-- JS injects server options -->
+      </div>
+
+    </div>
+
+    <!-- SEASON -->
+    <div class="pill-wrapper">
+
+      <div class="pill-dropdown" id="season-pill" onclick="togglePill(this)">
+        <div class="pill-label">
+          <span id="season-label">Season 1</span>
+          <i class="fas fa-chevron-up"></i>
+        </div>
+      </div>
+
+      <div class="pill-menu" id="season-menu" onclick="event.stopPropagation()">
+        <div class="menu-header">Select Season</div>
+      </div>
+
+    </div>
+
   </div>
 
-  <!-- EPISODE -->
-  <div class="pill-dropdown" id="episode-pill" onclick="togglePill(this)">
-    <span id="episode-label">Episode 1</span>
-    <i class="fas fa-chevron-up"></i>
-    <div class="pill-menu" id="episode-menu"></div>
+  <!-- ROW 2: EP SEARCH + EPISODE -->
+  <div class="row-nav">
+
+    <!-- EPISODE SEARCH -->
+    <input
+      id="episode-search"
+      type="text"
+      placeholder="Search episode..."
+      class="episode-search"
+      oninput="filterEpisodes(this.value)"
+    />
+
+    <!-- EPISODE -->
+    <div class="pill-wrapper">
+
+      <div class="pill-dropdown" id="episode-pill" onclick="togglePill(this)">
+        <div class="pill-label">
+          <span id="episode-label">Episode 1</span>
+          <i class="fas fa-chevron-up"></i>
+        </div>
+      </div>
+
+      <div class="pill-menu" id="episode-menu" onclick="event.stopPropagation()">
+        <div class="menu-header">Select Episode</div>
+      </div>
+
+    </div>
+
   </div>
 
 </div>
+
+
+</div>
+
 
   <script src="channels.js"></script>
   <script src="script.js"></script> 
