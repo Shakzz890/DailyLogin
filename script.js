@@ -633,46 +633,125 @@ function displayUpcomingList(items, containerId) {
     });
 }
 
+/* =========================================
+   UPDATED SLIDER INIT
+   ========================================= */
 function initSlider(items) {
     const track = document.getElementById('slider-track');
     const dotsContainer = document.getElementById('slider-dots');
+    
     if (!track || !dotsContainer || !items?.length) return;
 
     track.innerHTML = '';
     dotsContainer.innerHTML = '';
 
     currentSlideIndex = 0;
-    const slideCount = Math.min(items.length, 5);
+    // We only show top 5 items in slider
+    const slideCount = Math.min(items.length, 5); 
 
     items.slice(0, slideCount).forEach((item, index) => {
         const slide = document.createElement('div');
         slide.className = 'slide fade-in';
+        
+        // Use high-quality backdrop
         slide.style.backgroundImage = `url(${IMG_URL}${item.backdrop_path})`;
-        slide.onclick = () => {
+
+        // Prepare Data
+        const title = getDisplayTitle(item);
+        const date = (item.release_date || item.first_air_date || 'N/A').split('-')[0];
+        const rating = item.vote_average ? item.vote_average.toFixed(1) : 'NR';
+        const overview = item.overview || "No description available.";
+        
+        // CLICKING SLIDE BACKGROUND OPENS DETAILS
+        slide.onclick = (e) => {
+            // Prevent triggering if clicked on buttons
+            if(e.target.closest('button')) return;
             CutieLoader.show("Opening...");
             setTimeout(() => showDetailView(item), 10);
         };
+
+        // NEW RICH CONTENT STRUCTURE
         slide.innerHTML = `
             <div class="slide-content">
-                <h1>${getDisplayTitle(item)}</h1>
+                <span class="slide-badge">Trending Now</span>
+                
+                <h1 class="slide-title">${title}</h1>
+                
+                <div class="slide-meta">
+                    <span>${date}</span>
+                    <span>•</span>
+                    <span class="slide-rating">
+                        <i class="fas fa-star"></i> ${rating}
+                    </span>
+                </div>
+
+                <p class="slide-desc">${overview}</p>
+
+                <div class="slide-actions">
+                    <button class="slider-btn btn-play-slide" onclick="showDetailView(currentItem)">
+                        <i class="fas fa-play"></i> Play
+                    </button>
+                    <button class="slider-btn btn-info-slide" onclick="showDetailView(currentItem)">
+                        <i class="fas fa-info-circle"></i> Details
+                    </button>
+                </div>
             </div>
         `;
+        
+        // We need to attach the 'item' to the buttons correctly
+        // Since template literals turn objects to strings, we set onclick in JS below:
+        const playBtn = slide.querySelector('.btn-play-slide');
+        const infoBtn = slide.querySelector('.btn-info-slide');
+        
+        playBtn.onclick = () => {
+            CutieLoader.show("Opening...");
+            showDetailView(item);
+        };
+        infoBtn.onclick = () => {
+            CutieLoader.show("Opening...");
+            showDetailView(item);
+        };
+
         track.appendChild(slide);
 
+        // DOTS
         const dot = document.createElement('div');
         dot.className = index === 0 ? 'dot active' : 'dot';
+        dot.onclick = () => {
+            // Manual slide navigation
+            currentSlideIndex = index;
+            updateSliderPosition();
+            resetSliderTimer();
+        };
         dotsContainer.appendChild(dot);
     });
 
-    if (sliderInterval) clearInterval(sliderInterval);
+    startSliderTimer(slideCount);
+}
 
+// Helper to update position (if not already existing)
+function updateSliderPosition() {
+    const track = document.getElementById('slider-track');
+    if(track) track.style.transform = `translateX(-${currentSlideIndex * 100}%)`;
+    
+    document.querySelectorAll('.dot').forEach((d, i) => 
+        d.classList.toggle('active', i === currentSlideIndex)
+    );
+}
+
+// Helper to manage timer
+function startSliderTimer(count) {
+    if (sliderInterval) clearInterval(sliderInterval);
     sliderInterval = setInterval(() => {
-        currentSlideIndex = (currentSlideIndex + 1) % slideCount;
-        track.style.transform = `translateX(-${currentSlideIndex * 100}%)`;
-        document.querySelectorAll('.dot').forEach((d, i) =>
-            d.classList.toggle('active', i === currentSlideIndex)
-        );
-    }, 4000);
+        currentSlideIndex = (currentSlideIndex + 1) % count;
+        updateSliderPosition();
+    }, 5000); // 5 seconds
+}
+
+function resetSliderTimer() {
+    if (sliderInterval) clearInterval(sliderInterval);
+    const count = document.querySelectorAll('.slide').length;
+    startSliderTimer(count);
 }
 
 /* =========================================================
@@ -788,13 +867,13 @@ function handleCategoryScroll() {
    6. DETAIL VIEW LOGIC (UPDATED WITH NEW SERVERS & SANDBOX)
    ========================================================= */
 /* =========================================================
-   UPDATED DETAIL VIEW LOGIC (Split Layout Support)
+   UPDATED SHOW DETAIL VIEW (Split Layout + Auth Hooks + Duration)
    ========================================================= */
 async function showDetailView(item) {
     try {
         currentItem = item;
 
-        // Reset state
+        // 1. Reset Global State
         currentDetail.id = item.id;
         currentDetail.type = item.media_type || (item.first_air_date ? 'tv' : 'movie');
         currentDetail.title = item.title || item.name || '';
@@ -803,59 +882,48 @@ async function showDetailView(item) {
         currentSeason = 1;
         currentEpisode = 1;
 
+        // 2. Prepare UI
         const view = document.getElementById('detail-view');
-        if (!view) throw new Error("View not found");
-
-        // 1. UI RESET
+        const backdropImg = document.getElementById('detail-backdrop-img');
+        const posterImg = document.getElementById('detail-poster-img');
+        
         document.body.classList.remove('cinema-hide');
         document.body.style.overflow = 'hidden';
         view.style.display = 'flex';
         view.scrollTop = 0; // Reset scroll to top
 
-        /* ================= IMAGE LOGIC (The Split Layout) ================= */
-        const backdropImg = document.getElementById('detail-backdrop-img');
-        const posterImg = document.getElementById('detail-poster-img');
-
+        // 3. SET IMAGES (The Split Layout Logic)
         // A. Set Vertical Poster (The Card)
         if (posterImg) {
             posterImg.src = item.poster_path 
                 ? POSTER_URL + item.poster_path 
                 : PLACEHOLDER_IMG;
         }
-
+        
         // B. Set Background (Fallback to poster if no backdrop exists)
         if (backdropImg) {
-            const backdropPath = item.backdrop_path 
+            const bgPath = item.backdrop_path 
                 ? IMG_URL + item.backdrop_path 
                 : (item.poster_path ? IMG_URL + item.poster_path : PLACEHOLDER_IMG);
-            backdropImg.src = backdropPath;
+            backdropImg.src = bgPath;
         }
 
-        /* ================= TEXT INFO ================= */
+        // 4. SET BASIC TEXT
         document.getElementById('detail-title').innerText = getDisplayTitle(item);
         document.getElementById('detail-overview').innerText = item.overview || 'No overview available.';
         
-        // Date
         const dateStr = (item.release_date || item.first_air_date || '');
         document.getElementById('detail-date').innerText = dateStr.split('-')[0] || 'N/A';
-        
-        // Rating
-        document.getElementById('detail-rating').innerText = 
-            item.vote_average ? item.vote_average.toFixed(1) : 'NR';
+        document.getElementById('detail-rating').innerText = item.vote_average ? Number(item.vote_average).toFixed(1) : 'NR';
 
-        /* ================= LOAD WATCH PROGRESS ================= */
-        loadWatchProgress();
-
-        /* ================= FETCH FULL DETAILS (Genres, Runtime, Etc) ================= */
+        // 5. FETCH FULL DETAILS (Parallel request for speed)
         const type = currentDetail.type === 'tv' ? 'tv' : 'movie';
-        
-        // Fetch Details & Recommendations in parallel
         const [details, recs] = await Promise.all([
             fetch(`${BASE_URL}/${type}/${item.id}?api_key=${API_KEY}`).then(r => r.json()),
             fetch(`${BASE_URL}/${type}/${item.id}/recommendations?api_key=${API_KEY}`).then(r => r.json())
         ]);
 
-        // 2. GENRE PILLS LOGIC
+        // 6. RENDER GENRE PILLS
         const genreList = document.getElementById('detail-genres-list');
         if (genreList && details.genres) {
             genreList.innerHTML = details.genres.slice(0, 3).map(g => 
@@ -863,7 +931,7 @@ async function showDetailView(item) {
             ).join('');
         }
 
-        // 3. DURATION / RUNTIME LOGIC
+        // 7. RENDER DURATION / RUNTIME
         const durationEl = document.getElementById('detail-duration');
         if (durationEl) {
             let runtime = 0;
@@ -882,7 +950,7 @@ async function showDetailView(item) {
             }
         }
 
-        /* ================= TV SEASON LOGIC ================= */
+        // 8. HANDLE TV SEASONS vs MOVIE
         const seasonPill = document.getElementById('season-pill');
         const episodeLabel = document.getElementById('episode-label');
         const seasonLabel = document.getElementById('season-label');
@@ -897,7 +965,38 @@ async function showDetailView(item) {
             if (episodeLabel) episodeLabel.innerText = 'Movie';
         }
 
-        /* ================= RENDER EXTRAS ================= */
+        // --- AUTH HOOKS START ---
+        
+        // A. Update Watchlist Button State (Check if already added)
+        if (window.checkWatchlistStatus) {
+            window.checkWatchlistStatus(item);
+        }
+
+        // B. Attach Click Event to Watchlist Button
+        const watchlistBtn = view.querySelector('.watchlist-btn');
+        if (watchlistBtn) {
+            watchlistBtn.onclick = () => {
+                // Use the safe wrapper we created
+                if (window.handleWatchlistClick) {
+                    window.handleWatchlistClick(item);
+                } else if (window.toggleWatchlist) {
+                    // Direct fallback if wrapper missing
+                    window.toggleWatchlist(item);
+                } else {
+                    alert("Please sign in to use the Watchlist feature.");
+                    if(window.toggleAuthDropdown) window.toggleAuthDropdown('login');
+                }
+            };
+        }
+
+        // C. Auto-Add to History on View
+        if (window.addToHistory) {
+            window.addToHistory(item);
+        }
+        
+        // --- AUTH HOOKS END ---
+
+        // 9. RENDER EXTRAS
         renderServerOptions();
         renderRecommendations(recs.results);
 
@@ -908,6 +1007,7 @@ async function showDetailView(item) {
     }
 }
 
+
 function renderRecommendations(results) {
     const recGrid = document.getElementById('recommendations-grid');
     if (!recGrid) return;
@@ -915,18 +1015,18 @@ function renderRecommendations(results) {
     recGrid.innerHTML = '';
     const items = results || [];
 
-    items.slice(0, 12).forEach(rec => { // Limit to 12 items for cleaner look
+    // Show top 12 recommendations
+    items.slice(0, 12).forEach(rec => { 
         if (!rec.poster_path) return;
 
         const title = getDisplayTitle(rec);
         const year = (rec.release_date || rec.first_air_date || 'N/A').split('-')[0];
-        const rating = rec.vote_average ? rec.vote_average.toFixed(1) : 'NR';
+        const rating = rec.vote_average ? Number(rec.vote_average).toFixed(1) : 'NR';
         const typeLabel = rec.media_type === 'tv' ? 'TV' : 'Movie';
 
         const card = document.createElement('div');
-        card.className = 'movie-card'; // Re-use your existing card class
+        card.className = 'movie-card'; 
         
-        // This makes sure clicking a recommendation scrolls to top
         card.onclick = () => {
             showDetailView(rec);
         };
@@ -949,6 +1049,156 @@ function renderRecommendations(results) {
         `;
         recGrid.appendChild(card);
     });
+}
+
+
+/* =========================================================
+   DISPLAY LISTS (Open in Category View)
+   ========================================================= */
+
+function openUserList(listType) {
+    if (!isUserLoggedIn()) {
+        promptLogin();
+        return;
+    }
+
+    const view = document.getElementById('category-view');
+    const titleEl = document.getElementById('category-title');
+    const gridEl = document.getElementById('category-grid');
+    
+    // Set Title
+    titleEl.innerText = listType === 'watchlist' ? 'My Watchlist' : 'Watch History';
+    gridEl.innerHTML = '';
+    view.style.display = 'flex';
+
+    // Get Data
+    const storageKey = listType === 'watchlist' ? 'userWatchlist' : 'userHistory';
+    const items = JSON.parse(localStorage.getItem(storageKey) || '[]');
+
+    if (items.length === 0) {
+        gridEl.innerHTML = '<div style="color:#888; width:100%; text-align:center; margin-top:50px;">List is empty.</div>';
+        return;
+    }
+
+    // Reuse your existing render logic
+    items.forEach(item => {
+        const title = item.title;
+        const date = item.release_date || 'N/A';
+        const year = date.split('-')[0];
+        const rating = item.vote_average ? item.vote_average.toFixed(1) : 'NR';
+        const type = item.media_type === 'tv' ? 'TV Series' : 'Movie';
+
+        const card = document.createElement('div');
+        card.className = 'movie-card fade-in';
+        card.onclick = () => {
+            CutieLoader.show("Opening...");
+            setTimeout(() => showDetailView(item), 10);
+        };
+        
+        card.innerHTML = `
+            <div class="card-poster">
+                <div class="rating-badge"><i class="fas fa-star"></i> ${rating}</div>
+                <img src="${POSTER_URL}${item.poster_path}" loading="lazy" onerror="this.src='${PLACEHOLDER_IMG}'">
+                ${listType === 'history' ? '<div class="badge-overlay" style="background:#444;">WATCHED</div>' : ''}
+            </div>
+            <div class="card-info">
+                <div class="card-title">${title}</div>
+                <div class="card-meta">
+                    <span>${year}</span>
+                    <span class="dot-sep"></span>
+                    <span>${type}</span>
+                </div>
+            </div>
+        `;
+        gridEl.appendChild(card);
+    });
+}
+
+/* =========================================================
+   HISTORY SYSTEM
+   ========================================================= */
+
+function addToHistory(item) {
+    if (!isUserLoggedIn()) return; // Silent return for history, don't annoy user
+
+    let history = JSON.parse(localStorage.getItem('userHistory') || '[]');
+    
+    // Remove if it already exists (to move it to the top)
+    history = history.filter(i => i.id !== item.id);
+
+    // Add to beginning of array
+    history.unshift({
+        id: item.id,
+        title: item.title || item.name,
+        poster_path: item.poster_path,
+        vote_average: item.vote_average,
+        release_date: item.release_date || item.first_air_date,
+        media_type: item.media_type || (item.title ? 'movie' : 'tv'),
+        watched_at: new Date().toISOString()
+    });
+
+    // Limit history to last 50 items
+    if (history.length > 50) history.pop();
+
+    localStorage.setItem('userHistory', JSON.stringify(history));
+}
+
+/* =========================================================
+   WATCHLIST / FAVORITES SYSTEM
+   ========================================================= */
+
+// Toggle Watchlist Item
+function toggleWatchlist(item) {
+    if (!isUserLoggedIn()) {
+        promptLogin();
+        return;
+    }
+
+    let watchlist = JSON.parse(localStorage.getItem('userWatchlist') || '[]');
+    const existingIndex = watchlist.findIndex(i => i.id === item.id);
+
+    if (existingIndex > -1) {
+        // Remove if already exists
+        watchlist.splice(existingIndex, 1);
+        showToast("Removed from Watchlist");
+    } else {
+        // Add new item
+        // Save only necessary data to save storage space
+        watchlist.push({
+            id: item.id,
+            title: item.title || item.name,
+            poster_path: item.poster_path,
+            vote_average: item.vote_average,
+            release_date: item.release_date || item.first_air_date,
+            media_type: item.media_type || (item.title ? 'movie' : 'tv')
+        });
+        showToast("Added to Watchlist");
+    }
+
+    localStorage.setItem('userWatchlist', JSON.stringify(watchlist));
+    updateWatchlistButtonState(item.id); // Update the button icon immediately
+}
+
+// Check if item is in watchlist (to update UI)
+function isInWatchlist(id) {
+    const watchlist = JSON.parse(localStorage.getItem('userWatchlist') || '[]');
+    return watchlist.some(i => i.id === id);
+}
+
+// Update the Button UI in Detail View
+function updateWatchlistButtonState(id) {
+    const btn = document.querySelector('.watchlist-btn');
+    if (!btn) return;
+
+    if (isInWatchlist(id)) {
+        btn.innerHTML = '<i class="fas fa-check"></i> Added';
+        btn.style.background = "#fff";
+        btn.style.color = "#000";
+    } else {
+        btn.innerHTML = '<i class="far fa-bookmark"></i> Watchlist';
+        btn.style.background = "rgba(255,255,255,0.1)";
+        btn.style.color = "#fff";
+    }
 }
 
 
@@ -1663,4 +1913,13 @@ document.addEventListener('keydown', e => {
   }
 });
 
+window.handleWatchlistClick = function(item) {
+    if (window.toggleWatchlist) {
+        window.toggleWatchlist(item);
+    } else {
+        // Fallback if auth.js isn't loaded or user isn't logged in logic isn't ready
+        alert("Please sign in to use the Watchlist feature.");
+        if(window.toggleAuthDropdown) window.toggleAuthDropdown('login');
+    }
+};
 
