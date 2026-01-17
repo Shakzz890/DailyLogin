@@ -55,11 +55,41 @@
   </div>
   <div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
 
-  <div class="navbar">
-    <div class="nav-left">
-        <div class="hamburger" onclick="toggleSidebar()"><i class="fa-solid fa-bars"></i></div>
-        <div class="logo-text">SHAKZZ<span style="color:#e50914;">TV</span></div>
+ <div class="nav-left">
+    <div class="hamburger" onclick="toggleSidebar()">
+        <i class="fa-solid fa-bars"></i>
     </div>
+    
+    <div class="logo-text">SHAKZZ<span style="color:#e50914;">TV</span></div>
+
+    <ul class="desktop-menu">
+        <li>
+            <a href="#" class="nav-link active" onclick="switchView('home'); setActive(this)">
+                <i class="fa-solid fa-house"></i> Home
+            </a>
+        </li>
+        <li>
+            <a href="#" class="nav-link" onclick="openSearchModal(); setActive(this)">
+                <i class="fa-regular fa-compass"></i> Explore
+            </a>
+        </li>
+        <li>
+            <a href="#" class="nav-link" onclick="switchView('live'); setActive(this)">
+                <i class="fa-solid fa-tv"></i> Live TV
+            </a>
+        </li>
+        <li>
+            <a href="#" class="nav-link" onclick="openInfoModal('updates'); setActive(this)">
+                <i class="fa-solid fa-bell"></i> Updates
+            </a>
+        </li>
+        <li>
+            <a href="#" class="nav-link" onclick="openInfoModal('contact'); setActive(this)">
+                <i class="fa-solid fa-envelope"></i> Contact
+            </a>
+        </li>
+    </ul>
+</div>
     <div class="nav-right">
         <div id="viewerCounter" class="view-count" style="margin-right: 10px; color: #e50914; font-weight: bold; font-size: 0.9rem;">
             <i class="fa fa-eye"></i> <span id="live-counter">...</span>
