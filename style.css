@@ -1719,7 +1719,7 @@ input {
     }
 }
 /* =========================================
-   DETAIL VIEW - ADAPTIVE LAYOUT
+   1. DETAIL VIEW - ADAPTIVE LAYOUT
    ========================================= */
 
 #detail-view {
@@ -1732,7 +1732,7 @@ input {
     animation: fadeIn 0.3s ease;
 }
 
-/* --- 1. BACKDROP LAYER --- */
+/* --- BACKDROP LAYER --- */
 .detail-backdrop-layer {
     position: fixed;
     top: 0; left: 0; width: 100%; height: 100%;
@@ -1753,7 +1753,7 @@ input {
     background: linear-gradient(to top, #0f0f0f 10%, rgba(15,15,15,0.8) 60%, rgba(15,15,15,0.4) 100%);
 }
 
-/* --- 2. LAYOUT WRAPPER --- */
+/* --- LAYOUT WRAPPER --- */
 .detail-content-wrapper {
     width: 100%;
     max-width: 1200px;
@@ -1764,10 +1764,7 @@ input {
     flex-direction: column;
 }
 
-/* =========================================
-   MOBILE DESIGN (Default)
-   Matches your "Redflix Mobile" Screenshot
-   ========================================= */
+/* --- MOBILE DESIGN (Default - Stacked) --- */
 .detail-hero-layout {
     display: flex;
     flex-direction: column; /* Stack vertically */
@@ -1796,6 +1793,7 @@ input {
     line-height: 1.1;
     margin-bottom: 5px;
     color: #fff;
+    text-shadow: 0 2px 10px rgba(0,0,0,0.5);
 }
 
 .detail-info-box {
@@ -1810,10 +1808,7 @@ input {
     justify-content: center;
 }
 
-/* =========================================
-   DESKTOP DESIGN (Big Screen)
-   Matches your "Redflix Desktop" Screenshot
-   ========================================= */
+/* --- DESKTOP DESIGN (Min-width: 1024px - Split) --- */
 @media (min-width: 1024px) {
     
     .detail-content-wrapper {
@@ -1875,3 +1870,27 @@ input {
 .play-btn-primary:hover { transform: scale(1.05); }
 .watchlist-btn { flex: 1; background: rgba(255,255,255,0.1); color: #fff; padding: 14px 20px; border-radius: 8px; font-weight: 600; font-size: 1.1rem; border: 1px solid rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; gap: 10px; transition: background 0.2s; }
 .watchlist-btn:hover { background: rgba(255,255,255,0.2); }
+
+/* =========================================
+   2. FIX FOR NAVBAR OVERLAP (FINAL)
+   ========================================= */
+
+/* The 'Solid' state for pages other than Home */
+.navbar.solid-nav {
+    background: #0f0f0f; /* Pitch black background */
+    border-bottom: 1px solid rgba(255,255,255,0.1); /* Subtle separator */
+    box-shadow: 0 4px 12px rgba(0,0,0,0.5); /* Shadow for depth */
+}
+
+/* Push the Live View content down so it doesn't hide behind the navbar */
+#live-view {
+    padding-top: 80px; /* 80px ensures it clears the header nicely */
+    min-height: 100vh;
+}
+
+/* Ensure mobile layout doesn't break */
+@media (max-width: 1024px) {
+    #live-view {
+        min-height: 100vh;
+    }
+}

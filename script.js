@@ -141,18 +141,30 @@ function switchView(viewName) {
     lastSidebarView = viewName;
     const home = document.getElementById('home-view');
     const live = document.getElementById('live-view');
+    const navbar = document.querySelector('.navbar');
     const sidebar = document.getElementById('main-sidebar');
     const overlay = document.getElementById('overlay');
 
+    // --- 1. NAVBAR FIX: Solid Black on Live TV, Transparent on Home ---
+    if (viewName === 'home') {
+        navbar.classList.remove('solid-nav');
+    } else {
+        navbar.classList.add('solid-nav');
+    }
+
+    // --- 2. PLAYER LOGIC: Stop video if leaving Live TV ---
     if (viewName !== 'live') {
         if (window.jwplayer && jwplayer("video")) {
             try { jwplayer("video").stop(); } catch(e) {}
         }
     }
 
+    // --- 3. VIEW TOGGLE LOGIC ---
     if (viewName === 'live') {
         if (home) home.style.display = 'none';
-        if (live) live.style.display = 'flex';
+        if (live) live.style.display = 'flex'; // Use flex to fix layout
+        
+        // Resize player when entering Live view
         if (window.jwplayer && jwplayer("video")) {
              jwplayer("video").resize();
         }
@@ -161,13 +173,16 @@ function switchView(viewName) {
         if (live) live.style.display = 'none';
     }
 
+    // --- 4. SIDEBAR LOGIC (Runs for ALL views) ---
     setSidebarActive(viewName);
 
+    // Close mobile sidebar automatically
     if (window.innerWidth < 1024) {
         sidebar?.classList.remove('open');
         overlay?.classList.remove('active');
     }
 }
+
 
 window.toggleSidebar = function() {
     const sidebar = document.getElementById('main-sidebar');
