@@ -14,7 +14,7 @@ let currentDetail = {
    ========================================================= */
 const API_KEY = '4eea503176528574efd91847b7a302cc'; 
 const BASE_URL = 'https://api.themoviedb.org/3';
-const IMG_URL = 'https://image.tmdb.org/t/p/w1280';
+const IMG_URL = 'https://image.tmdb.org/t/p/original';
 const POSTER_URL = 'https://image.tmdb.org/t/p/w300';
 const PLACEHOLDER_IMG = 'logo.png';
 
@@ -91,7 +91,6 @@ let cinemaTimer = null;
 let sliderInterval = null;
 let isPlayerOpen = false;
 let currentEpisodeList = [];
-let scrollTimeout = null;
 
 
 /* --- LOADER CONTROL --- */
@@ -773,15 +772,17 @@ function handleCategoryScroll() {
 /* =========================================================
    6. DETAIL VIEW LOGIC (UPDATED WITH NEW SERVERS & SANDBOX)
    ========================================================= */
+/* =========================================================
+   UPDATED DETAIL VIEW LOGIC (Split Layout Support)
+   ========================================================= */
 async function showDetailView(item) {
     try {
         currentItem = item;
 
+        // Reset state
         currentDetail.id = item.id;
         currentDetail.type = item.media_type || (item.first_air_date ? 'tv' : 'movie');
         currentDetail.title = item.title || item.name || '';
-
-        // 🔥 RESET DEFAULTS
         currentDetail.season = 1;
         currentDetail.episode = 1;
         currentSeason = 1;
@@ -790,153 +791,151 @@ async function showDetailView(item) {
         const view = document.getElementById('detail-view');
         if (!view) throw new Error("View not found");
 
-        const backdrop = view.querySelector('.detail-backdrop-container');
-        const video = document.getElementById('detail-video');
-
+        // 1. UI RESET
         document.body.classList.remove('cinema-hide');
         document.body.style.overflow = 'hidden';
         view.style.display = 'flex';
-        if (video) video.src = '';
+        view.scrollTop = 0; // Reset scroll to top
 
-        /* ================= SWIPE TO CLOSE ================= */
-        let startY = 0;
-        let startX = 0;
-        if (backdrop && !backdrop.dataset.swipeBound) {
-            backdrop.dataset.swipeBound = 'true';
-            backdrop.addEventListener('touchstart', e => {
-                if (e.touches.length !== 1) return;
-                startY = e.touches[0].clientY;
-                startX = e.touches[0].clientX;
-            }, { passive: true });
+        /* ================= IMAGE LOGIC (The Split Layout) ================= */
+        const backdropImg = document.getElementById('detail-backdrop-img');
+        const posterImg = document.getElementById('detail-poster-img');
 
-            backdrop.addEventListener('touchend', e => {
-                const endY = e.changedTouches[0].clientY;
-                const endX = e.changedTouches[0].clientX;
-                if (endY - startY > 150 && Math.abs(endX - startX) < 80) {
-                    closeDetailView();
-                }
-            }, { passive: true });
+        // A. Set Vertical Poster (The Card)
+        if (posterImg) {
+            posterImg.src = item.poster_path 
+                ? POSTER_URL + item.poster_path 
+                : PLACEHOLDER_IMG;
         }
 
-        /* ================= BASIC INFO ================= */
+        // B. Set Background (Fallback to poster if no backdrop exists)
+        if (backdropImg) {
+            const backdropPath = item.backdrop_path 
+                ? IMG_URL + item.backdrop_path 
+                : (item.poster_path ? IMG_URL + item.poster_path : PLACEHOLDER_IMG);
+            backdropImg.src = backdropPath;
+        }
+
+        /* ================= TEXT INFO ================= */
         document.getElementById('detail-title').innerText = getDisplayTitle(item);
-        document.getElementById('detail-overview').innerText = item.overview || 'No overview';
-        document.getElementById('detail-date').innerText =
-            (item.release_date || item.first_air_date || '').split('-')[0] || 'N/A';
-        document.getElementById('detail-rating').innerText =
-            item.vote_average ? item.vote_average.toFixed(1) : 'N/A';
+        document.getElementById('detail-overview').innerText = item.overview || 'No overview available.';
+        
+        // Date
+        const dateStr = (item.release_date || item.first_air_date || '');
+        document.getElementById('detail-date').innerText = dateStr.split('-')[0] || 'N/A';
+        
+        // Rating
+        document.getElementById('detail-rating').innerText = 
+            item.vote_average ? item.vote_average.toFixed(1) : 'NR';
 
-        const bg = document.getElementById('detail-backdrop-img');
-        if (bg && item.backdrop_path) bg.src = IMG_URL + item.backdrop_path;
-
-        /* ================= LOAD WATCH PROGRESS FIRST ================= */
+        /* ================= LOAD WATCH PROGRESS ================= */
         loadWatchProgress();
 
-        /* ================= FETCH DETAILS ================= */
+        /* ================= FETCH FULL DETAILS (Genres, Runtime, Etc) ================= */
         const type = currentDetail.type === 'tv' ? 'tv' : 'movie';
+        
+        // Fetch Details & Recommendations in parallel
         const [details, recs] = await Promise.all([
             fetch(`${BASE_URL}/${type}/${item.id}?api_key=${API_KEY}`).then(r => r.json()),
             fetch(`${BASE_URL}/${type}/${item.id}/recommendations?api_key=${API_KEY}`).then(r => r.json())
         ]);
 
-        /* ================= SEASON + EPISODE LOGIC ================= */
+        // 2. GENRE PILLS LOGIC
+        const genreList = document.getElementById('detail-genres-list');
+        if (genreList && details.genres) {
+            genreList.innerHTML = details.genres.slice(0, 3).map(g => 
+                `<span class="genre-pill">${g.name}</span>`
+            ).join('');
+        }
+
+        // 3. DURATION / RUNTIME LOGIC
+        const durationEl = document.getElementById('detail-duration');
+        if (durationEl) {
+            let runtime = 0;
+            if (type === 'movie') {
+                runtime = details.runtime;
+            } else if (details.episode_run_time && details.episode_run_time.length > 0) {
+                runtime = details.episode_run_time[0];
+            }
+            
+            if (runtime > 0) {
+                const hours = Math.floor(runtime / 60);
+                const minutes = runtime % 60;
+                durationEl.innerText = hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
+            } else {
+                durationEl.innerText = type === 'tv' ? 'TV Series' : 'Movie';
+            }
+        }
+
+        /* ================= TV SEASON LOGIC ================= */
         const seasonPill = document.getElementById('season-pill');
         const episodeLabel = document.getElementById('episode-label');
         const seasonLabel = document.getElementById('season-label');
 
         if (currentDetail.type === 'tv') {
             if (seasonPill) seasonPill.style.display = 'flex';
-
-            // 🔥 AUTO LOAD SEASONS (this auto-selects & fetches episodes)
             populateSeasons(details.seasons || []);
-
-            // 🔥 SYNC LABELS
             if (seasonLabel) seasonLabel.innerText = `Season ${currentSeason}`;
             if (episodeLabel) episodeLabel.innerText = `Episode ${currentEpisode}`;
-
         } else {
             if (seasonPill) seasonPill.style.display = 'none';
             if (episodeLabel) episodeLabel.innerText = 'Movie';
         }
 
-        /* ================= SERVER OPTIONS ================= */
+        /* ================= RENDER EXTRAS ================= */
         renderServerOptions();
-
-        /* ================= RECOMMENDATIONS ================= */
-/* ================= RECOMMENDATIONS (ALWAYS 24) ================= */
-const recGrid = document.getElementById('recommendations-grid');
-recGrid.innerHTML = '';
-
-let items = recs.results?.filter(r => r.poster_path) || [];
-
-/* 🔁 FALLBACK 1: SIMILAR */
-if (items.length < 24) {
-    const similar = await fetch(
-        `${BASE_URL}/${type}/${item.id}/similar?api_key=${API_KEY}`
-    ).then(r => r.json());
-
-    items = items.concat(
-        similar.results?.filter(r => r.poster_path) || []
-    );
-}
-
-/* 🔁 FALLBACK 2: POPULAR */
-if (items.length < 24) {
-    const popular = await fetch(
-        `${BASE_URL}/${type}/popular?api_key=${API_KEY}`
-    ).then(r => r.json());
-
-    items = items.concat(
-        popular.results?.filter(r => r.poster_path) || []
-    );
-}
-
-/* 🔥 FINAL: FORCE EXACTLY 24 */
-items = items.slice(0, 24);
-
-items.forEach(rec => {
-    const title = getDisplayTitle(rec);
-    const year = (rec.release_date || rec.first_air_date || 'N/A').split('-')[0];
-    const rating = rec.vote_average ? rec.vote_average.toFixed(1) : 'NR';
-    const typeLabel = rec.media_type === 'tv' || currentDetail.type === 'tv'
-        ? 'TV Series'
-        : 'Movie';
-
-    const card = document.createElement('div');
-    card.className = 'movie-card';
-    card.onclick = () => {
-        showDetailView(rec);
-        view.scrollTop = 0;
-    };
-
-    card.innerHTML = `
-        <div class="card-poster">
-            <div class="rating-badge">
-                <i class="fas fa-star"></i> ${rating}
-            </div>
-            <img src="${POSTER_URL}${rec.poster_path}"
-                 loading="lazy"
-                 onerror="this.src='${PLACEHOLDER_IMG}'">
-        </div>
-        <div class="card-info">
-            <div class="card-title">${title}</div>
-            <div class="card-meta">
-                <span>${year}</span>
-                <span class="dot-sep"></span>
-                <span>${typeLabel}</span>
-            </div>
-        </div>
-    `;
-    recGrid.appendChild(card);
-});
-
+        renderRecommendations(recs.results);
 
     } catch (err) {
-        console.error(err);
+        console.error("Error opening detail view:", err);
     } finally {
         CutieLoader.hide();
     }
 }
+
+function renderRecommendations(results) {
+    const recGrid = document.getElementById('recommendations-grid');
+    if (!recGrid) return;
+    
+    recGrid.innerHTML = '';
+    const items = results || [];
+
+    items.slice(0, 12).forEach(rec => { // Limit to 12 items for cleaner look
+        if (!rec.poster_path) return;
+
+        const title = getDisplayTitle(rec);
+        const year = (rec.release_date || rec.first_air_date || 'N/A').split('-')[0];
+        const rating = rec.vote_average ? rec.vote_average.toFixed(1) : 'NR';
+        const typeLabel = rec.media_type === 'tv' ? 'TV' : 'Movie';
+
+        const card = document.createElement('div');
+        card.className = 'movie-card'; // Re-use your existing card class
+        
+        // This makes sure clicking a recommendation scrolls to top
+        card.onclick = () => {
+            showDetailView(rec);
+        };
+
+        card.innerHTML = `
+            <div class="card-poster">
+                <div class="rating-badge">
+                    <i class="fas fa-star"></i> ${rating}
+                </div>
+                <img src="${POSTER_URL}${rec.poster_path}" loading="lazy" onerror="this.src='${PLACEHOLDER_IMG}'">
+            </div>
+            <div class="card-info">
+                <div class="card-title">${title}</div>
+                <div class="card-meta">
+                    <span>${year}</span>
+                    <span class="dot-sep"></span>
+                    <span>${typeLabel}</span>
+                </div>
+            </div>
+        `;
+        recGrid.appendChild(card);
+    });
+}
+
 
  
 function closeDetailView() {
@@ -1206,37 +1205,38 @@ function playEpisode(ep) {
 
 // --- CORE PLAYER FUNCTION REPLACED WITH NEW LOGIC ---
 function changeDetailServer(season = 1, episode = 1, targetIframe = null) {
-    if (!currentItem) return;
-
+    if(!currentItem) return;
     currentSeason = season;
     currentEpisode = episode;
     currentDetail.season = season;
     currentDetail.episode = episode;
-
+    
+    // Get current server object from the array using index
     const serverObj = servers[currentServerIndex];
     if (!serverObj) return;
 
+    // Generate URL
     const src = serverObj.getUrl(currentSeason, currentEpisode);
 
+    // Get Iframe & Toggle
     const iframe = targetIframe || document.getElementById('overlay-video');
-    if (!iframe) return;
-
     const toggleBtn = document.getElementById('sandbox-toggle');
+    
+    // Sync Toggle UI
     if (toggleBtn) toggleBtn.checked = sandboxEnabled;
 
-    // ✅ SAFE + WORKING SANDBOX POLICY
+    // Apply Sandbox Policy based on boolean state
     if (sandboxEnabled) {
-        iframe.setAttribute(
-            "sandbox",
-            "allow-scripts allow-same-origin allow-popups allow-forms allow-top-navigation-by-user-activation"
-        );
+        iframe.setAttribute("sandbox", "allow-scripts allow-same-origin allow-presentation");
     } else {
         iframe.removeAttribute("sandbox");
     }
-
+    
+    // Set attributes common to all
     iframe.setAttribute("allowfullscreen", "");
-    iframe.src = src;
 
+    if(iframe) iframe.src = src;
+    
     saveWatchProgress();
     markEpisodeWatched();
 }
@@ -1424,20 +1424,11 @@ async function loadMoreBrowseResults() {
 }
 
 function handleBrowseScroll() {
-    if (scrollTimeout) return; // Ignore if already waiting
-
-    scrollTimeout = setTimeout(() => {
-        const container = document.getElementById('search-results');
-        if (!container) return;
-        
-        // Increased buffer from 120 to 300 for smoother infinite load
-        if (container.scrollTop + container.clientHeight >= container.scrollHeight - 300) {
-            if(browseState.hasMore && !browseState.isLoading) {
-                loadMoreBrowseResults();
-            }
-        }
-        scrollTimeout = null;
-    }, 100); // Only check every 100ms
+    const container = document.getElementById('search-results');
+    if (!container) return;
+    if (container.scrollTop + container.clientHeight >= container.scrollHeight - 120 && browseState.hasMore) {
+        loadMoreBrowseResults();
+    }
 }
 
 function renderBrowseResults(items) {
@@ -1656,33 +1647,5 @@ document.addEventListener('keydown', e => {
     e.preventDefault();
   }
 });
-
-// Push a state when opening modals so "Back" closes modal, not the site
-window.history.pushState({ view: 'home' }, ''); 
-
-window.onpopstate = function(event) {
-    // If a modal is open, close it and prevent navigation
-    const searchModal = document.getElementById('search-modal');
-    const detailView = document.getElementById('detail-view');
-    const playerOverlay = document.getElementById('player-overlay');
-
-    if (playerOverlay && playerOverlay.style.display === 'flex') {
-        closePlayerOverlay();
-        window.history.pushState({ view: 'detail' }, ''); // Stay on page
-        return;
-    }
-    if (detailView && detailView.style.display === 'flex') {
-        closeDetailView();
-        window.history.pushState({ view: 'home' }, ''); // Stay on page
-        return;
-    }
-    if (searchModal && searchModal.style.display === 'flex') {
-        closeSearchModal();
-        window.history.pushState({ view: 'home' }, '');
-        return;
-    }
-};
-
-
 
 

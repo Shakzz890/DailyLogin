@@ -178,39 +178,61 @@
       </div>
   </div>
 
-  <div id="detail-view">
-    <div class="detail-backdrop-container">
-      <img id="detail-backdrop-img">
-      <div class="backdrop-gradient"></div>
-      <button class="close-detail-btn" onclick="closeDetailView()">✕</button>
+<div id="detail-view">
+    
+    <div class="detail-backdrop-layer">
+        <img id="detail-backdrop-img" src="" alt="Backdrop">
+        <div class="detail-overlay-gradient"></div>
     </div>
 
-    <div class="detail-info-layer">
-      <h1 id="detail-title"></h1>
+    <button class="close-detail-btn" onclick="closeDetailView()">
+        <i class="fa-solid fa-arrow-left"></i>
+    </button>
 
-      <div class="detail-meta-row">
-        <span id="detail-date"></span>
-        <span>⭐ <span id="detail-rating"></span></span>
-      </div>
+    <div class="detail-content-wrapper">
+        
+        <div class="detail-hero-layout">
+            
+            <div class="detail-poster-card">
+                <img id="detail-poster-img" src="" alt="Poster">
+            </div>
 
-      <div id="detail-genres-list"></div>
-      <p id="detail-overview"></p>
+            <div class="detail-info-box">
+                <h1 id="detail-title">Title Here</h1>
+                
+                <div class="detail-meta-row">
+                    <span id="detail-date">2024</span>
+                    <span class="dot-sep"></span>
+                    <span class="rating-box">
+                        <i class="fas fa-star"></i> <span id="detail-rating">0.0</span>
+                    </span>
+                    <span class="dot-sep"></span>
+                    <span id="detail-duration">0m</span>
+                </div>
 
-      <div class="detail-actions">
-        <button class="play-btn-primary" onclick="playContent()">
-          <i class="fas fa-play"></i> Play
-        </button>
-        <button class="watchlist-btn">
-          <i class="far fa-bookmark"></i> My List
-        </button>
-      </div>
+                <div id="detail-genres-list" class="genre-pills-row"></div>
 
-      <div class="recommendations-section">
-        <h3>You may also like</h3>
-        <div id="recommendations-grid" class="recommendations-grid"></div>
-      </div>
+                <p id="detail-overview">Overview goes here...</p>
+
+                <div class="detail-actions">
+                    <button class="play-btn-primary" onclick="playContent()">
+                        <i class="fas fa-play"></i> Play
+                    </button>
+                    <button class="watchlist-btn">
+                        <i class="far fa-bookmark"></i> Watchlist
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="recommendations-section">
+            <h3>You may also like</h3>
+            <div id="recommendations-grid" class="recommendations-grid"></div>
+        </div>
     </div>
-  </div>
+</div>
+
+
 
   <div id="category-view" class="category-view">
       <div class="category-header">
