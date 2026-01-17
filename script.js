@@ -115,28 +115,6 @@ const CutieLoader = {
     }
 };
 
-/* --- TOAST NOTIFICATION --- */
-function showToast(message) {
-    // Remove existing toast if any
-    const existing = document.querySelector('.toast-notification');
-    if (existing) existing.remove();
-
-    const toast = document.createElement('div');
-    toast.className = 'toast-notification fade-in';
-    toast.style.cssText = `
-        position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-        background: rgba(229, 9, 20, 0.9); color: #fff; padding: 12px 24px;
-        border-radius: 8px; font-weight: 600; z-index: 10000; box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-    `;
-    toast.innerText = message;
-    document.body.appendChild(toast);
-
-    setTimeout(() => {
-        toast.style.opacity = '0';
-        setTimeout(() => toast.remove(), 300);
-    }, 3000);
-}
-
 function getDisplayTitle(item) {
   if (item.origin_country?.includes('PH') || item.original_language === 'tl') {
     return item.original_name || item.name || item.title;
@@ -169,9 +147,9 @@ function switchView(viewName) {
 
     // --- 1. NAVBAR FIX: Solid Black on Live TV, Transparent on Home ---
     if (viewName === 'home') {
-        navbar.classList.remove('solid-nav');
+        if(navbar) navbar.classList.remove('solid-nav');
     } else {
-        navbar.classList.add('solid-nav');
+        if(navbar) navbar.classList.add('solid-nav');
     }
 
     // --- 2. PLAYER LOGIC: Stop video if leaving Live TV ---
@@ -184,7 +162,7 @@ function switchView(viewName) {
     // --- 3. VIEW TOGGLE LOGIC ---
     if (viewName === 'live') {
         if (home) home.style.display = 'none';
-        if (live) live.style.display = 'flex'; // Use flex to fix layout
+        if (live) live.style.display = 'flex'; 
         
         // Resize player when entering Live view
         if (window.jwplayer && jwplayer("video")) {
@@ -195,13 +173,35 @@ function switchView(viewName) {
         if (live) live.style.display = 'none';
     }
 
-    // --- 4. SIDEBAR LOGIC (Runs for ALL views) ---
+    // --- 4. SIDEBAR & DESKTOP NAV SYNC ---
     setSidebarActive(viewName);
+    
+    // *** NEW: Update the Desktop Navbar too! ***
+    if(typeof updateDesktopNavState === 'function') {
+        updateDesktopNavState(viewName);
+    }
 
     // Close mobile sidebar automatically
     if (window.innerWidth < 1024) {
         sidebar?.classList.remove('open');
         overlay?.classList.remove('active');
+    }
+}
+
+
+window.handleNavClick = function(element, view) {
+    switchView(view);
+    updateDesktopNavState(view);
+};
+
+
+function updateDesktopNavState(view) {
+    document.querySelectorAll('.desktop-menu .nav-link').forEach(link => {
+        link.classList.remove('active');
+    });
+    const activeLink = document.querySelector(`.desktop-menu .nav-link[onclick*="'${view}'"]`);
+    if (activeLink) {
+        activeLink.classList.add('active');
     }
 }
 
@@ -397,17 +397,11 @@ function loadChannel(key) {
 
 function loadFavoritesFromStorage() {
     try {
-        const stored = localStorage.getItem("favoriteChannels");
-        const favs = stored ? JSON.parse(stored) : []; // Safe check
+        const stored = JSON.parse(localStorage.getItem("favoriteChannels") || "[]");
         if (typeof channels !== 'undefined') {
-            Object.entries(channels).forEach(([key, channel]) => { 
-                channel.favorite = favs.includes(key); 
-            });
+            Object.entries(channels).forEach(([key, channel]) => { channel.favorite = stored.includes(key); });
         }
-    } catch (e) {
-        console.warn("Resetting corrupted favorites", e);
-        localStorage.removeItem("favoriteChannels"); // Auto-fix
-    }
+    } catch (e) {}
 }
 
 function saveFavoritesToStorage() {
@@ -1249,14 +1243,9 @@ function closeDetailView() {
 }
 
 function playContent() {
-    if (!currentItem || !currentDetail.id) {
-        showToast("Error: Content not ready");
-        return;
-    }
     const overlay = document.getElementById('player-overlay');
     const iframe = document.getElementById('overlay-video');
-    if (!overlay || !iframe) return;
-    
+    if (!overlay || !iframe || !currentItem) return;
     isPlayerOpen = true;
     overlay.style.display = 'flex';
     document.body.style.overflow = 'hidden';
