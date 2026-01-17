@@ -2096,3 +2096,66 @@ input {
 .detail-content-wrapper {
     padding-bottom: 100px !important; /* Extra space at the bottom */
 }
+
+/* =========================================
+   DESKTOP NAVIGATION (Nav Left)
+   ========================================= */
+
+/* Default State (Mobile): Hide the desktop menu links, show hamburger */
+.desktop-menu {
+    display: none;
+}
+
+/* Large Screens (TV/Desktop): Hide Hamburger, Show Text Links */
+@media (min-width: 1024px) {
+    
+    /* 1. Hide the Hamburger Menu */
+    .hamburger {
+        display: none; 
+    }
+
+    /* 2. Layout the Links horizontally next to Logo */
+    .desktop-menu {
+        display: flex;
+        align-items: center;
+        gap: 20px; /* Space between items */
+        margin-left: 40px; /* Distance from the SHAKZZ TV Logo */
+        list-style: none;
+    }
+
+    /* 3. Style the Individual Links */
+    .nav-link {
+        font-size: 0.95rem;
+        font-weight: 500;
+        color: #b3b3b3; /* Muted color for inactive state */
+        display: flex;
+        align-items: center;
+        gap: 8px; /* Space between icon and text */
+        transition: all 0.3s ease;
+        padding: 8px 12px;
+        border-radius: 6px;
+    }
+
+    /* Icon styling */
+    .nav-link i {
+        font-size: 0.9rem;
+        margin-top: -1px; /* Slight alignment fix */
+    }
+
+    /* Hover State */
+    .nav-link:hover {
+        color: #fff;
+        background: rgba(255, 255, 255, 0.05);
+    }
+
+    /* Active State (Current Page) */
+    .nav-link.active {
+        color: #fff;
+        font-weight: 700;
+    }
+    
+    /* Optional: Add the red dot/underline for active state */
+    .nav-link.active i {
+        color: var(--accent-color); /* The red color */
+    }
+}
