@@ -473,17 +473,44 @@ input {
     justify-content: space-between;
 }
 
+/* =========================================
+   UPDATED GRID LAYOUT (2 Columns Mobile / 5 Columns Desktop)
+   ========================================= */
+
 .list {
-    display: flex;
-    gap: 12px;
-    overflow-x: auto;
-    padding-bottom: 10px;
-    scroll-behavior: smooth;
-    scrollbar-width: none;
+    display: grid;
+    /* Mobile Default: 2 Columns */
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+    padding-bottom: 20px;
+    
+    /* Reset Flexbox settings */
+    overflow-x: visible; 
+    flex-wrap: wrap;
+    justify-content: start;
 }
 
-.list::-webkit-scrollbar {
-    display: none;
+/* Ensure cards fit the grid cells */
+.list .movie-card {
+    width: 100%;
+    min-width: 0; /* Prevents grid blowout */
+}
+
+/* =========================================
+   DESKTOP / TV SPECIFIC RULES (Limit to 10 items)
+   ========================================= */
+@media (min-width: 1024px) {
+    .list {
+        /* 5 Columns per row */
+        grid-template-columns: repeat(5, 1fr);
+        gap: 20px;
+    }
+
+    /* STRICT LIMIT: Hide every card after the 10th one.
+       This ensures exactly 2 rows (5 Top + 5 Bottom). */
+    .list .movie-card:nth-child(n+11) {
+        display: none;
+    }
 }
 
 .movie-card {
@@ -598,11 +625,6 @@ input {
     height: 3px;
     background: #555;
     border-radius: 50%;
-}
-
-.list .movie-card {
-    min-width: 140px;
-    width: 140px;
 }
 
 .results .movie-card,
