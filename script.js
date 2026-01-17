@@ -115,6 +115,28 @@ const CutieLoader = {
     }
 };
 
+/* --- TOAST NOTIFICATION --- */
+function showToast(message) {
+    // Remove existing toast if any
+    const existing = document.querySelector('.toast-notification');
+    if (existing) existing.remove();
+
+    const toast = document.createElement('div');
+    toast.className = 'toast-notification fade-in';
+    toast.style.cssText = `
+        position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+        background: rgba(229, 9, 20, 0.9); color: #fff; padding: 12px 24px;
+        border-radius: 8px; font-weight: 600; z-index: 10000; box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+    `;
+    toast.innerText = message;
+    document.body.appendChild(toast);
+
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
+
 function getDisplayTitle(item) {
   if (item.origin_country?.includes('PH') || item.original_language === 'tl') {
     return item.original_name || item.name || item.title;
@@ -375,11 +397,17 @@ function loadChannel(key) {
 
 function loadFavoritesFromStorage() {
     try {
-        const stored = JSON.parse(localStorage.getItem("favoriteChannels") || "[]");
+        const stored = localStorage.getItem("favoriteChannels");
+        const favs = stored ? JSON.parse(stored) : []; // Safe check
         if (typeof channels !== 'undefined') {
-            Object.entries(channels).forEach(([key, channel]) => { channel.favorite = stored.includes(key); });
+            Object.entries(channels).forEach(([key, channel]) => { 
+                channel.favorite = favs.includes(key); 
+            });
         }
-    } catch (e) {}
+    } catch (e) {
+        console.warn("Resetting corrupted favorites", e);
+        localStorage.removeItem("favoriteChannels"); // Auto-fix
+    }
 }
 
 function saveFavoritesToStorage() {
@@ -1221,9 +1249,14 @@ function closeDetailView() {
 }
 
 function playContent() {
+    if (!currentItem || !currentDetail.id) {
+        showToast("Error: Content not ready");
+        return;
+    }
     const overlay = document.getElementById('player-overlay');
     const iframe = document.getElementById('overlay-video');
-    if (!overlay || !iframe || !currentItem) return;
+    if (!overlay || !iframe) return;
+    
     isPlayerOpen = true;
     overlay.style.display = 'flex';
     document.body.style.overflow = 'hidden';
