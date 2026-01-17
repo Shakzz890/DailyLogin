@@ -2098,64 +2098,86 @@ input {
 }
 
 /* =========================================
-   DESKTOP NAVIGATION (Nav Left)
+   DESKTOP NAVIGATION (Nav Left) - FIXED
    ========================================= */
 
-/* Default State (Mobile): Hide the desktop menu links, show hamburger */
+/* 1. Mobile State (Default) - Hidden */
+/* This ensures the list doesn't show up on phones */
 .desktop-menu {
     display: none;
 }
 
-/* Large Screens (TV/Desktop): Hide Hamburger, Show Text Links */
+/* 2. Desktop/TV State (Min-width: 1024px) */
 @media (min-width: 1024px) {
-    
-    /* 1. Hide the Hamburger Menu */
+
+    /* HIDE the Hamburger Icon */
     .hamburger {
-        display: none; 
+        display: none !important;
     }
 
-    /* 2. Layout the Links horizontally next to Logo */
-    .desktop-menu {
+    /* Adjust .nav-left to align Logo and Menu side-by-side */
+    .nav-left {
         display: flex;
         align-items: center;
-        gap: 20px; /* Space between items */
-        margin-left: 40px; /* Distance from the SHAKZZ TV Logo */
-        list-style: none;
+        gap: 0; /* Remove gap here, we handle it in margins */
     }
 
-    /* 3. Style the Individual Links */
+    /* SHOW the Menu List */
+    .desktop-menu {
+        display: flex !important; /* Force flex display */
+        align-items: center;
+        list-style: none;
+        gap: 30px; /* Space between 'Home', 'Explore', etc. */
+        margin: 0;
+        padding: 0;
+        margin-left: 50px; /* Push the menu away from the SHAKZZ TV Logo */
+    }
+
+    /* Reset any list item styles */
+    .desktop-menu li {
+        margin: 0;
+        padding: 0;
+        display: flex;
+        align-items: center;
+    }
+
+    /* Style the Links (Text & Icons) */
     .nav-link {
+        text-decoration: none;
         font-size: 0.95rem;
         font-weight: 500;
-        color: #b3b3b3; /* Muted color for inactive state */
+        color: #b3b3b3; /* Light Grey (Inactive) */
         display: flex;
         align-items: center;
-        gap: 8px; /* Space between icon and text */
-        transition: all 0.3s ease;
-        padding: 8px 12px;
-        border-radius: 6px;
+        gap: 10px; /* Space between Icon and Text */
+        transition: color 0.3s ease;
+        padding: 5px 0;
     }
 
-    /* Icon styling */
+    /* Fix Icon Size/Alignment */
     .nav-link i {
-        font-size: 0.9rem;
-        margin-top: -1px; /* Slight alignment fix */
+        font-size: 1rem;
+        margin-top: -1px;
+        transition: color 0.3s ease;
     }
 
-    /* Hover State */
+    /* Hover Effect */
     .nav-link:hover {
         color: #fff;
-        background: rgba(255, 255, 255, 0.05);
-    }
-
-    /* Active State (Current Page) */
-    .nav-link.active {
-        color: #fff;
-        font-weight: 700;
     }
     
-    /* Optional: Add the red dot/underline for active state */
+    .nav-link:hover i {
+        color: #fff;
+    }
+
+    /* Active State (The current page) */
+    .nav-link.active {
+        color: #ffffff; /* White Text */
+        font-weight: 700;
+    }
+
+    /* Active Icon Color (Red) */
     .nav-link.active i {
-        color: var(--accent-color); /* The red color */
+        color: var(--accent-color); /* #e50914 */
     }
 }
