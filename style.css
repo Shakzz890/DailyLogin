@@ -4,12 +4,14 @@
     --text-color: #f1f5f9;
     --text-muted: #94a3b8;
     --accent-color: #e50914;
-    --accent-gradient: linear-gradient(135deg, #e50914 0%, #b20710 100%);
+--glass-border: rgba(255, 255, 255, 0.12);
+    --accent-gradient: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 50%, #ec4899 100%);
     --rating-color: #46d369;
     --sidebar-width: 280px;
     --header-height: 70px;
     --border-radius: 8px;
     --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    
 }
 
 * {
@@ -783,38 +785,56 @@ input {
         border-left: 1px solid #222;
         padding-bottom: 50px;
     }
+
+    /* --- UPDATED CATEGORY BAR (SHAKZZ TV STYLE) --- */
     .category-bar {
         display: flex;
-        gap: 10px;
-        overflow-x: auto;
-        white-space: nowrap;
-        padding-bottom: 5px;
-        scrollbar-width: none;
+        flex-wrap: wrap; /* Allows buttons to wrap to next line like reference */
+        gap: 8px;
+        padding: 0 20px 15px; /* Matches reference padding */
+        border-bottom: 1px solid var(--glass-border);
+        margin-bottom: 15px;
     }
+
+    /* Hide scrollbar since we are wrapping now */
     .category-bar::-webkit-scrollbar {
         display: none;
     }
+
+    /* --- UPDATED CATEGORY BUTTON (SHAKZZ TV STYLE) --- */
     .category-button {
-        background: #1a1a1a;
+        background: rgba(255, 255, 255, 0.05); /* Glass Background */
         color: #ccc;
-        border: 1px solid #333;
-        padding: 8px 16px;
-        border-radius: 20px;
-        font-size: 0.85rem;
+        border: 1px solid transparent; /* Prepare for border transition */
+        padding: 6px 14px;
+        border-radius: 50px; /* Pill Shape */
+        font-size: 0.8rem;
+        font-weight: 500;
         cursor: pointer;
-        flex-shrink: 0;
-        transition: all 0.2s;
+        flex: 1 0 auto; /* Allow buttons to grow/shrink nicely */
+        text-align: center;
+        transition: all 0.3s ease;
+        font-family: 'Outfit', sans-serif;
     }
+
+    .category-button:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: white;
+        transform: translateY(-1px);
+    }
+
     .category-button.active {
-        background: #e50914;
-        color: #fff;
-        border-color: #e50914;
+        background: var(--accent-gradient); /* The Purple/Pink Gradient */
+        color: white;
+        border-color: transparent;
+        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4); /* Glow Effect */
+        font-weight: 600;
     }
+
     .category-dropdown-btn {
         display: none;
     }
 }
-
 .channel-list-wrapper {
     flex: 1;
 }
