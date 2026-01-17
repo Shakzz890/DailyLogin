@@ -75,7 +75,7 @@ input {
     box-shadow: none;
 }
 
-
+.nav-left,
 .nav-right {
     display: flex;
     align-items: center;
@@ -473,44 +473,17 @@ input {
     justify-content: space-between;
 }
 
-/* =========================================
-   UPDATED GRID LAYOUT (2 Columns Mobile / 5 Columns Desktop)
-   ========================================= */
-
 .list {
-    display: grid;
-    /* Mobile Default: 2 Columns */
-    grid-template-columns: repeat(2, 1fr);
-    gap: 15px;
-    padding-bottom: 20px;
-    
-    /* Reset Flexbox settings */
-    overflow-x: visible; 
-    flex-wrap: wrap;
-    justify-content: start;
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    padding-bottom: 10px;
+    scroll-behavior: smooth;
+    scrollbar-width: none;
 }
 
-/* Ensure cards fit the grid cells */
-.list .movie-card {
-    width: 100%;
-    min-width: 0; /* Prevents grid blowout */
-}
-
-/* =========================================
-   DESKTOP / TV SPECIFIC RULES (Limit to 10 items)
-   ========================================= */
-@media (min-width: 1024px) {
-    .list {
-        /* 5 Columns per row */
-        grid-template-columns: repeat(5, 1fr);
-        gap: 20px;
-    }
-
-    /* STRICT LIMIT: Hide every card after the 10th one.
-       This ensures exactly 2 rows (5 Top + 5 Bottom). */
-    .list .movie-card:nth-child(n+11) {
-        display: none;
-    }
+.list::-webkit-scrollbar {
+    display: none;
 }
 
 .movie-card {
@@ -625,6 +598,11 @@ input {
     height: 3px;
     background: #555;
     border-radius: 50%;
+}
+
+.list .movie-card {
+    min-width: 140px;
+    width: 140px;
 }
 
 .results .movie-card,
@@ -2117,67 +2095,4 @@ input {
 /* 3. Ensure extra padding at the bottom so content isn't flush with the edge */
 .detail-content-wrapper {
     padding-bottom: 100px !important; /* Extra space at the bottom */
-}
-
-/* =========================================
-   DESKTOP NAVIGATION (Kisskh Style)
-   ========================================= */
-
-/* 1. Mobile Default: Hide the Desktop Menu */
-.desktop-menu {
-    display: none;
-}
-
-/* 2. Desktop/TV Styles (min-width: 1024px) */
-@media (min-width: 1024px) {
-
-    /* HIDE the Hamburger Menu */
-    .hamburger {
-        display: none !important; 
-    }
-
-    /* SHOW the Desktop Menu */
-    .desktop-menu {
-        display: flex;
-        align-items: center;
-        gap: 10px; /* Spacing between buttons */
-        margin-left: 30px; /* Spacing from Logo */
-    }
-
-    /* Style the list items */
-    .desktop-menu li {
-        list-style: none;
-    }
-
-    /* Style the links to look like Kisskh buttons */
-    .nav-link {
-        display: flex;
-        align-items: center;
-        gap: 8px; /* Space between Icon and Text */
-        color: #ccc; /* Default text color */
-        font-size: 0.95rem;
-        font-weight: 500;
-        padding: 8px 16px;
-        border-radius: 20px; /* Pill shape like Kisskh */
-        text-decoration: none;
-        transition: all 0.2s ease;
-    }
-
-    /* Icon size */
-    .nav-link i {
-        font-size: 1.1rem;
-    }
-
-    /* Hover Effect */
-    .nav-link:hover {
-        background: rgba(255, 255, 255, 0.1);
-        color: #fff;
-    }
-
-    /* Active State (Highlighted) */
-    .nav-link.active {
-        background: #fff; /* White background */
-        color: #000;      /* Black text */
-        font-weight: 700;
-    }
 }
