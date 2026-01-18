@@ -131,10 +131,19 @@
   </div>
 
   <div id="home-view">
-      <div class="slider-viewport">
-        <div class="slider-track" id="slider-track"></div>
-        <div class="slider-dots" id="slider-dots"></div>
-      </div>
+  <div class="slider-viewport">
+    <div class="slider-track" id="slider-track"></div>
+    
+    <button class="slider-arrow prev-arrow" onclick="moveSlider(-1)">
+        <i class="fas fa-chevron-left"></i>
+    </button>
+    <button class="slider-arrow next-arrow" onclick="moveSlider(1)">
+        <i class="fas fa-chevron-right"></i>
+    </button>
+
+    <div class="slider-dots" id="slider-dots"></div>
+</div>
+
 
       <div class="row" id="continue-watching-row" style="display: none;">
         <h2><span class="section-indicator" style="background: #e50914;"></span> Continue Watching <i class="fa-solid fa-clock-rotate-left"></i></h2>
@@ -150,13 +159,54 @@
       <div class="row"><h2 onclick="openCategory('anime', 'Trending Anime')"><span class="section-indicator"></span> Trending Anime <i class="fa-solid fa-chevron-right"></i></h2><div class="list" id="anime-list"></div></div>
       <div class="row"><h2 onclick="openCategory('upcoming', 'Upcoming Releases')"><span class="section-indicator"></span> Upcoming <i class="fa-solid fa-chevron-right"></i></h2><div class="list" id="upcoming-list"></div></div>
 
-      <footer class="footer">
-        <div class="footer-links">
-          <a href="#" onclick="openInfoModal('dmca')">Disclaimer</a>
-          <a href="#" onclick="openInfoModal('privacy')">Privacy</a>
+    <footer class="footer">
+    <div class="footer-content">
+        
+        <div class="footer-top">
+            
+            <div class="footer-desc">
+                <h4>DIVE INTO THE NEW WORLD OF STREAMING</h4>
+                <p>
+                    Watch your favorite movies, TV shows, and anime in HD. 
+                    Shakzz TV brings the cinema experience directly to your device, 
+                    anytime, anywhere.
+                </p>
+            </div>
+
+            <div class="footer-nav-wrapper">
+                
+                <div class="footer-col">
+                    <span class="col-title">EXPLORE</span>
+                    <a href="#" onclick="openInfoModal('updates')">Updates</a>
+                    <a href="#" onclick="openInfoModal('faq')">FAQ</a>
+                    <a href="#" onclick="openInfoModal('contact')">Contact via Email</a>
+                </div>
+
+                <div class="footer-col">
+                    <span class="col-title">FOLLOW US</span>
+                    <div class="social-row">
+                        <a href="https://www.facebook.com/share/1BzwhDsGmT/" target="_blank"><i class="fa-brands fa-facebook-f"></i></a>
+                        <a href="https://www.instagram.com/shakzzph?igsh=MTR4enRzbjJ4aWh5MQ==" target="_blank"><i class="fa-brands fa-instagram"></i></a>
+                        <a href="https://www.tiktok.com/@shxkzz05?_r=1&_t=ZS-939s4GLBc28" target="_blank"><i class="fa-brands fa-tiktok"></i></a>
+                        <a href="https://www.youtube.com/@Shakzz05" target="_blank"><i class="fa-brands fa-youtube"></i></a>
+                    </div>
+                </div>
+
+            </div>
         </div>
-        <p>© 2025 Shakzz TV.</p>
-      </footer>
+
+        <div class="footer-big-text">
+            SHAKZZ TV
+        </div>
+
+        <div class="footer-bottom">
+            <span class="copyright">© 2025 SHAKZZ TV. ALL RIGHTS RESERVED.</span>
+            <span class="credits">DESIGNED BY SHAKZZ</span>
+        </div>
+
+    </div>
+</footer>
+
   </div>
 
   <div id="live-view" style="display: none;">

@@ -522,60 +522,91 @@ async function fetchMixedDrama(lang, country, specificIds = []) {
     }
 }
 
+/* =========================================
+   UPDATED: INIT MOVIES (Fixed for Actual Trending)
+   Slider: Real-time Global Trending (Day)
+   Lists: Popular & Genre Specific
+   ========================================= */
 async function initMovies() {
     try {
-        const kDramaIds = [216310, 222066, 136283, 99966]; 
-        const cDramaIds = [126932, 202974, 216390]; 
-
+        // We fetch the "Real" trending data (Movies + TV mixed)
+        // /trending/all/day = What everyone is watching right now
+        // /trending/all/week = What has been popular this week
+        
         const [
-            latest,
-            kdramaMixed,
-            cdramaMixed,
+            trendingDay,      // For Slider (Hot right now)
+            trendingWeek,     // For "Latest/Trending" List
+            kdramaList,
+            cdramaList,
             filipino, 
-            anime,
+            animeList,
             movies,
             tv,
             upcoming
         ] = await Promise.all([
-            fetchData('/tv/on_the_air?sort_by=popularity.desc'),
-            fetchMixedDrama('ko', 'KR', kDramaIds),
-            fetchMixedDrama('zh', 'CN', cDramaIds),
+            // 1. ACTUAL TRENDING FETCHES
+            fetchData('/trending/all/day'),  
+            fetchData('/trending/all/week'),
+
+            // 2. GENRE SPECIFIC (Sort by Popularity)
+            fetchData('/discover/tv?with_original_language=ko&with_origin_country=KR&sort_by=popularity.desc'),
+            fetchData('/discover/tv?with_original_language=zh&with_origin_country=CN&sort_by=popularity.desc'),
             fetchData('/discover/tv?with_original_language=tl&with_origin_country=PH&sort_by=popularity.desc'),
             fetchData('/discover/tv?with_genres=16&with_original_language=ja&sort_by=popularity.desc'),
-            fetchData('/trending/movie/week'),
-            fetchData('/trending/tv/week'),
+
+            // 3. GENERAL MOVIES & TV
+            fetchData('/movie/popular'),
+            fetchData('/tv/popular'),
             fetchData('/movie/upcoming?region=US')
         ]);
         
-        initSlider(movies.results);
-        displayList(latest.results, 'latest-list');
-        displayList(cdramaMixed, 'cdrama-list');
-        displayList(kdramaMixed, 'kdrama-list');
+        // --- SLIDER CONFIGURATION ---
+        // Use "Trending Day" for the slider to show the absolute hottest content
+        // We filter to ensure we only show items with high-quality backdrop images
+        const sliderContent = (trendingDay.results || []).filter(item => item.backdrop_path);
+        initSlider(sliderContent);
+
+        // --- LISTS CONFIGURATION ---
+        // 'latest-list' now shows Trending Week (The "Buzz" list)
+        displayList(trendingWeek.results, 'latest-list');
+        
+        // Other lists
+        displayList(cdramaList.results, 'cdrama-list'); 
+        displayList(kdramaList.results, 'kdrama-list'); 
         displayList(filipino.results, 'filipino-list');
         displayList(movies.results, 'movies-list');
         displayList(tv.results, 'tvshows-list');
-        displayList(anime.results, 'anime-list');
+        displayList(animeList.results, 'anime-list');   
         
         if (upcoming && upcoming.results) {
             displayUpcomingList(upcoming.results, 'upcoming-list');
         }
 
-    } catch (e) { console.error(e); } 
+    } catch (e) { 
+        console.error("Error initializing movies:", e); 
+    } 
 }
+
+
+
 
 function displayList(items, containerId) {
     const container = document.getElementById(containerId);
     if (!container) return;
     container.innerHTML = '';
     
-    items.forEach(item => {
-        if(!item.poster_path) return;
-        
+    const validItems = items.filter(item => item.poster_path);
+    const limitItems = validItems.slice(0, 12);
+
+    limitItems.forEach(item => {
         const title = getDisplayTitle(item);
         const date = item.release_date || item.first_air_date || 'N/A';
         const year = date.split('-')[0];
         const rating = item.vote_average ? item.vote_average.toFixed(1) : 'NR';
-        const type = item.media_type === 'tv' ? 'TV Series' : 'Movie';
+        
+        // Smart Check: If it has 'first_air_date', it's a Series
+        const isTv = item.media_type === 'tv' || item.first_air_date || item.name;
+        const type = isTv ? 'Series' : 'Movie'; // <--- CHANGED HERE
 
         const card = document.createElement('div');
         card.className = 'movie-card focusable-element fade-in';
@@ -605,26 +636,32 @@ function displayList(items, containerId) {
     });
 }
 
+
 function displayUpcomingList(items, containerId) {
     const container = document.getElementById(containerId);
     if (!container) return;
     container.innerHTML = '';
     
     const today = new Date();
-    const futureItems = items.filter(item => {
-        if (!item.release_date) return false;
+
+    // 1. FILTER FIRST (Future dates + Has Poster)
+    const validItems = items.filter(item => {
+        if (!item.poster_path || !item.release_date) return false;
         return new Date(item.release_date) >= today;
     });
-    futureItems.sort((a, b) => new Date(a.release_date) - new Date(b.release_date));
 
-    if (futureItems.length === 0) {
+    // 2. SORT BY DATE
+    validItems.sort((a, b) => new Date(a.release_date) - new Date(b.release_date));
+
+    // 3. CUT TO EXACTLY 12
+    const limitItems = validItems.slice(0, 12);
+
+    if (limitItems.length === 0) {
         container.innerHTML = '<p style="color:#888; font-size:0.9rem;">No upcoming releases.</p>';
         return;
     }
 
-    futureItems.forEach(item => {
-        if(!item.poster_path) return;
-        
+    limitItems.forEach(item => {
         const dateObj = new Date(item.release_date);
         const dateStr = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
         const title = getDisplayTitle(item);
@@ -654,7 +691,6 @@ function displayUpcomingList(items, containerId) {
         container.appendChild(card);
     });
 }
-
 /* =========================================
    UPDATED SLIDER INIT
    ========================================= */
@@ -668,31 +704,26 @@ function initSlider(items) {
     dotsContainer.innerHTML = '';
 
     currentSlideIndex = 0;
-    // We only show top 5 items in slider
-    const slideCount = Math.min(items.length, 5); 
+    const slideCount = Math.min(items.length, 15); 
 
     items.slice(0, slideCount).forEach((item, index) => {
         const slide = document.createElement('div');
         slide.className = 'slide fade-in';
         
-        // Use high-quality backdrop
-        slide.style.backgroundImage = `url(${IMG_URL}${item.backdrop_path})`;
+        const bgImage = item.backdrop_path ? IMG_URL + item.backdrop_path : POSTER_URL + item.poster_path;
+        slide.style.backgroundImage = `url(${bgImage})`;
 
-        // Prepare Data
         const title = getDisplayTitle(item);
         const date = (item.release_date || item.first_air_date || 'N/A').split('-')[0];
         const rating = item.vote_average ? item.vote_average.toFixed(1) : 'NR';
         const overview = item.overview || "No description available.";
         
-        // CLICKING SLIDE BACKGROUND OPENS DETAILS
         slide.onclick = (e) => {
-            // Prevent triggering if clicked on buttons
             if(e.target.closest('button')) return;
             CutieLoader.show("Opening...");
             setTimeout(() => showDetailView(item), 10);
         };
 
-        // NEW RICH CONTENT STRUCTURE
         slide.innerHTML = `
             <div class="slide-content">
                 <span class="slide-badge">Trending Now</span>
@@ -710,37 +741,27 @@ function initSlider(items) {
                 <p class="slide-desc">${overview}</p>
 
                 <div class="slide-actions">
-                    <button class="slider-btn btn-play-slide" onclick="showDetailView(currentItem)">
+                    <button class="slider-btn btn-play-slide">
                         <i class="fas fa-play"></i> Play
                     </button>
-                    <button class="slider-btn btn-info-slide" onclick="showDetailView(currentItem)">
+                    <button class="slider-btn btn-info-slide">
                         <i class="fas fa-info-circle"></i> Details
                     </button>
                 </div>
             </div>
         `;
         
-        // We need to attach the 'item' to the buttons correctly
-        // Since template literals turn objects to strings, we set onclick in JS below:
         const playBtn = slide.querySelector('.btn-play-slide');
         const infoBtn = slide.querySelector('.btn-info-slide');
         
-        playBtn.onclick = () => {
-            CutieLoader.show("Opening...");
-            showDetailView(item);
-        };
-        infoBtn.onclick = () => {
-            CutieLoader.show("Opening...");
-            showDetailView(item);
-        };
+        playBtn.onclick = () => { CutieLoader.show("Opening..."); showDetailView(item); };
+        infoBtn.onclick = () => { CutieLoader.show("Opening..."); showDetailView(item); };
 
         track.appendChild(slide);
 
-        // DOTS
         const dot = document.createElement('div');
         dot.className = index === 0 ? 'dot active' : 'dot';
         dot.onclick = () => {
-            // Manual slide navigation
             currentSlideIndex = index;
             updateSliderPosition();
             resetSliderTimer();
@@ -750,6 +771,37 @@ function initSlider(items) {
 
     startSliderTimer(slideCount);
 }
+
+/* =========================================
+   SLIDER NAVIGATION (With Flash Effect)
+   ========================================= */
+
+window.moveSlider = function(direction) {
+    // 1. Logic to Move Slide
+    const slides = document.querySelectorAll('.slide');
+    if (slides.length === 0) return;
+
+    currentSlideIndex = (currentSlideIndex + direction + slides.length) % slides.length;
+    updateSliderPosition();
+    resetSliderTimer();
+
+    // 2. Visual "Flash" Effect Logic
+    // Automatically find which button was clicked based on direction
+    let btnClass = direction === 1 ? '.next-arrow' : '.prev-arrow';
+    let btn = document.querySelector(btnClass);
+
+    if (btn) {
+        // Add the 'clicked' class instantly
+        btn.classList.add('clicked');
+
+        // Remove it after 200ms to trigger the fade-out
+        setTimeout(() => {
+            btn.classList.remove('clicked');
+        }, 200);
+    }
+};
+
+
 
 // Helper to update position (if not already existing)
 function updateSliderPosition() {
@@ -1037,14 +1089,16 @@ function renderRecommendations(results) {
     recGrid.innerHTML = '';
     const items = results || [];
 
-    // Show top 12 recommendations
     items.slice(0, 12).forEach(rec => { 
         if (!rec.poster_path) return;
 
         const title = getDisplayTitle(rec);
         const year = (rec.release_date || rec.first_air_date || 'N/A').split('-')[0];
         const rating = rec.vote_average ? Number(rec.vote_average).toFixed(1) : 'NR';
-        const typeLabel = rec.media_type === 'tv' ? 'TV' : 'Movie';
+        
+        // Smart Check + "Series" label
+        const isTv = rec.media_type === 'tv' || rec.first_air_date || rec.name;
+        const typeLabel = isTv ? 'Series' : 'Movie'; // <--- CHANGED HERE
 
         const card = document.createElement('div');
         card.className = 'movie-card'; 
@@ -1072,6 +1126,7 @@ function renderRecommendations(results) {
         recGrid.appendChild(card);
     });
 }
+
 
 
 /* =========================================================
@@ -1728,7 +1783,10 @@ function renderBrowseResults(items) {
         const date = item.release_date || item.first_air_date || 'N/A';
         const year = date.split('-')[0];
         const rating = item.vote_average ? item.vote_average.toFixed(1) : 'NR';
-        const type = item.media_type === 'tv' ? 'TV Series' : 'Movie';
+        
+        // Smart Check + "Series" label
+        const isTv = item.media_type === 'tv' || item.first_air_date || item.name;
+        const type = isTv ? 'Series' : 'Movie'; // <--- CHANGED HERE
 
         const card = document.createElement('div');
         card.className = 'movie-card';
@@ -1755,6 +1813,7 @@ function renderBrowseResults(items) {
         container.appendChild(card);
     });
 }
+
 
 window.searchTMDB = async function() {
     const input = document.getElementById('search-input');

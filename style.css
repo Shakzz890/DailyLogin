@@ -464,27 +464,85 @@ input {
     vertical-align: middle;
 }
 
+/* =========================================
+   SECTION TITLES (Bigger & Left Aligned)
+   ========================================= */
+
 .row h2 {
-    margin-bottom: 15px;
-    font-size: clamp(16px, 4vw, 20px);
-    color: #eee;
+    margin-bottom: 20px;
+    /* Responsive Font: Minimum 24px, Preferred 5vw, Max 36px */
+    font-size: clamp(1.5rem, 5vw, 2.2rem); 
+    font-weight: 700;    /* Make it bold/thick */
+    color: #fff;         /* Pure white text */
     cursor: pointer;
+    
+    /* Flexbox settings for alignment */
     display: flex;
-    justify-content: space-between;
+    align-items: center;      /* Vertically center icon with text */
+    justify-content: flex-start; /* FORCE LEFT ALIGNMENT */
+    gap: 15px;                /* Space between text and the arrow icon */
+    
+    text-shadow: 0 2px 4px rgba(0,0,0,0.5); /* Subtle shadow for readability */
 }
 
+/* Optional: Style the arrow icon next to it */
+.row h2 i {
+    font-size: 1.2rem;
+    color: var(--accent-color); /* Red arrow */
+    opacity: 0.8;
+    transition: transform 0.3s ease;
+}
+
+/* Hover effect: Move arrow slightly when hovering title */
+.row h2:hover i {
+    transform: translateX(5px);
+    opacity: 1;
+}
+
+/* =========================================
+   HOME PAGE LISTS (Responsive)
+   ========================================= */
+
+/* 1. MOBILE & TABLET (Default): Horizontal Scroll */
 .list {
     display: flex;
     gap: 12px;
     overflow-x: auto;
     padding-bottom: 10px;
     scroll-behavior: smooth;
-    scrollbar-width: none;
+    scrollbar-width: none; /* Firefox hide scrollbar */
+    padding-right: 20px;   /* Padding for last item */
 }
 
 .list::-webkit-scrollbar {
-    display: none;
+    display: none; /* Chrome/Safari hide scrollbar */
 }
+
+.list .movie-card {
+    min-width: 140px; /* Force card size on mobile */
+    width: 140px;
+    flex-shrink: 0;   /* Prevent shrinking */
+}
+
+/* 2. DESKTOP (Screens wider than 1024px): 2-Row Grid */
+@media (min-width: 1024px) {
+    .list {
+        display: grid;
+        /* Force exactly 6 columns */
+        grid-template-columns: repeat(6, 1fr);
+        gap: 20px 15px;
+        overflow: visible;
+        padding-bottom: 20px;
+        padding-right: 0;
+    }
+
+    .list .movie-card {
+        width: 100%;     /* Fill the grid cell */
+        min-width: 0;    /* Reset mobile min-width */
+    }
+}
+
+
 
 .movie-card {
     width: 140px;
@@ -598,11 +656,6 @@ input {
     height: 3px;
     background: #555;
     border-radius: 50%;
-}
-
-.list .movie-card {
-    min-width: 140px;
-    width: 140px;
 }
 
 .results .movie-card,
@@ -1440,19 +1493,51 @@ input {
     background: linear-gradient(to bottom, transparent, #000 90%);
 }
 
+/* =========================================
+   CLOSE BUTTON (Fixed: Top-RIGHT, Mirrored, Clickable)
+   ========================================= */
+
 .close-detail-btn {
     position: absolute;
-    top: 15px;
-    right: 15px;
-    background: rgba(0, 0, 0, .6);
-    border: none;
-    color: #fff;
-    font-size: 22px;
+    top: 25px;           
+    right: 25px;         /* KEEP ON RIGHT SIDE */
+    left: auto;          /* Ensure left is unset */
+    
+    width: 50px;         /* Bigger touch target */
+    height: 50px;        
     border-radius: 50%;
-    width: 40px;
-    height: 40px;
+    
+    background: rgba(0, 0, 0, 0.6); 
+    backdrop-filter: blur(4px);     
+    border: 1px solid rgba(255,255,255,0.1);
+    
+    color: #fff;
+    font-size: 20px;
     cursor: pointer;
+    
+    /* Center the icon */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    
+    /* CLICKABILITY FIX - IMPORTANT */
+    z-index: 10000;      /* Forces it on top of everything */
+    pointer-events: auto; 
+    transition: all 0.2s ease;
 }
+
+/* Hover Effect */
+.close-detail-btn:hover {
+    background: #fff;
+    color: #000;
+    transform: scale(1.1);
+}
+
+/* MIRROR ICON (Flips the Left Arrow to point Right) */
+.close-detail-btn i {
+    transform: scaleX(-1); 
+}
+
 
 .detail-info-layer {
     position: relative;
@@ -1632,14 +1717,64 @@ input {
     flex-direction: column;
     overflow: hidden;
 }
+/* =========================================
+   HEADERS & BACK BUTTONS (Top-Right & Mirrored)
+   ========================================= */
+
+/* =========================================
+   CATEGORY HEADER (Title Left, Button Right)
+   ========================================= */
 
 .category-header {
-    padding: 15px;
+    position: relative;
+    padding: 25px;        /* Padding around the box */
     background: #181818;
     display: flex;
     align-items: center;
-    gap: 15px;
+    justify-content: flex-start; /* FORCE LEFT ALIGNMENT */
 }
+
+/* Style the Title explicitly */
+#category-title {
+    margin: 0;
+    font-size: 1.8rem;    /* Nice big font */
+    font-weight: 700;
+    color: #fff;
+    text-transform: capitalize;
+    padding-right: 60px;  /* Prevent text from hitting the button on right */
+}
+
+/* The Arrow Icon (Back Button) stays on the Right */
+.category-header i {
+    position: absolute;
+    top: 50%;
+    right: 25px;           /* KEEP ON RIGHT */
+    left: auto;            
+    transform: translateY(-50%) scaleX(-1); /* Center Y + Flip Arrow */
+    
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(255,255,255,0.1);
+    
+    color: #fff;
+    font-size: 20px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    transition: all 0.2s ease;
+}
+
+.category-header i:hover {
+    background: #fff;
+    color: #000;
+}
+
 
 .category-content {
     flex: 1;
@@ -1659,24 +1794,45 @@ input {
 
 .player-header {
     position: absolute;
-    top: 18px;
-    left: 18px;
+    top: 25px;
+    right: 25px;          /* MOVE TO RIGHT */
+    left: auto;           /* Reset Left */
     z-index: 30;
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 15px;
+    flex-direction: row-reverse; /* Keep title to the left of button */
 }
 
 .close-player-btn {
-    background: rgba(0, 0, 0, 0.6);
-    border: none;
-    color: #fff;
-    width: 38px;
-    height: 38px;
+    width: 50px;          /* Match Detail View size */
+    height: 50px;
     border-radius: 50%;
-    font-size: 16px;
+    
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(255,255,255,0.1);
+    
+    color: #fff;
+    font-size: 20px;
     cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
 }
+
+.close-player-btn:hover {
+    background: #fff;
+    color: #000;
+    transform: scale(1.1);
+}
+
+/* Flip the arrow inside the player button */
+.close-player-btn i {
+    transform: scaleX(-1);
+}
+
 
 .player-title {
     font-size: 1rem;
@@ -1888,151 +2044,230 @@ input {
         padding: 0;
     }
 }
+
 /* =========================================
-   1. DETAIL VIEW - ADAPTIVE LAYOUT
+   DETAIL VIEW - SPLIT LAYOUT (NETFLIX STYLE)
    ========================================= */
 
 #detail-view {
     position: fixed;
     inset: 0;
-    background: #000;
+    background: #141414; /* Darker Netflix background */
     z-index: 9000;
     display: none;
-    overflow-y: auto; /* Allows scrolling */
+    overflow-y: auto;
     animation: fadeIn 0.3s ease;
 }
 
-/* --- BACKDROP LAYER --- */
+/* --- 1. BACKDROP (The big background image) --- */
 .detail-backdrop-layer {
-    position: fixed;
-    top: 0; left: 0; width: 100%; height: 100%;
-    z-index: -1; /* Behind content */
+    position: absolute; /* Changed from fixed to absolute */
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 70vh; /* Covers top 70% of screen */
+    z-index: 0;
 }
 
 #detail-backdrop-img {
-    width: 100%; height: 100%;
+    width: 100%;
+    height: 100%;
     object-fit: cover;
-    opacity: 0.4; /* Dim background */
-    filter: blur(15px); /* Heavy blur for premium feel */
-    transform: scale(1.1); /* Remove blur edges */
+    opacity: 0.5; /* Darken it slightly */
+    mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 100%);
+    -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 100%);
 }
 
 .detail-overlay-gradient {
-    position: absolute; inset: 0;
-    /* Gradient from bottom (black) to top (transparent) */
-    background: linear-gradient(to top, #0f0f0f 10%, rgba(15,15,15,0.8) 60%, rgba(15,15,15,0.4) 100%);
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, #141414 10%, transparent 100%);
 }
 
-/* --- LAYOUT WRAPPER --- */
+/* --- 2. CONTENT WRAPPER --- */
 .detail-content-wrapper {
-    width: 100%;
-    max-width: 1200px;
+    position: relative;
+    z-index: 10;
+    width: 90%;
+    max-width: 1400px;
     margin: 0 auto;
-    padding: 80px 20px 40px; /* Top padding for header space */
-    min-height: 100vh;
+    padding-top: 200px; /* Push content down to see backdrop */
+    padding-bottom: 50px;
     display: flex;
     flex-direction: column;
 }
 
-/* --- MOBILE DESIGN (Default - Stacked) --- */
+/* --- 3. HERO LAYOUT (Split Screen) --- */
 .detail-hero-layout {
     display: flex;
-    flex-direction: column; /* Stack vertically */
-    align-items: center;    /* Center everything */
-    text-align: center;     /* Center text */
-    gap: 20px;
-    margin-bottom: 40px;
+    align-items: flex-end; /* Align bottom of poster with bottom of text */
+    gap: 40px;
+    margin-bottom: 50px;
 }
 
+/* LEFT SIDE: Poster */
 .detail-poster-card {
-    width: 180px; /* Smaller poster on mobile */
-    border-radius: 12px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    flex-shrink: 0;
+    width: 300px; /* Fixed width for desktop */
+    border-radius: 8px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.8);
     overflow: hidden;
-    border: 1px solid rgba(255,255,255,0.1);
-    margin-top: 10px;
+    transform: translateY(0); /* Reset transform */
+    background: #222;
 }
 
 #detail-poster-img {
-    width: 100%; display: block;
-}
-
-#detail-title {
-    font-size: 2rem;
-    font-weight: 800;
-    line-height: 1.1;
-    margin-bottom: 5px;
-    color: #fff;
-    text-shadow: 0 2px 10px rgba(0,0,0,0.5);
-}
-
-.detail-info-box {
     width: 100%;
+    height: auto;
+    display: block;
+    aspect-ratio: 2/3;
+    object-fit: cover;
+}
+
+/* RIGHT SIDE: Info */
+.detail-info-box {
+    flex: 1;
     display: flex;
     flex-direction: column;
+    justify-content: flex-end; /* Push text to bottom */
+    text-align: left; /* Force left alignment */
+}
+
+/* Title Styling */
+#detail-title {
+    font-size: 3.5rem;
+    font-weight: 800;
+    line-height: 1.1;
+    margin-bottom: 15px;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+}
+
+/* Metadata Row */
+.detail-meta-row {
+    display: flex;
     align-items: center;
+    gap: 10px;
+    color: #ccc;
+    font-weight: 500;
+    justify-content: flex-start; /* Align left */
+    margin-bottom: 20px;
+    font-size: 1.1rem;
 }
 
-/* Center the pills and metadata on mobile */
-.detail-meta-row, .genre-pills-row, .detail-actions {
+/* Genre Pills */
+.genre-pills-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: flex-start; /* Align left */
+    margin-bottom: 25px;
+}
+
+.genre-pill { 
+    background: rgba(255,255,255,0.15); 
+    backdrop-filter: blur(5px); 
+    padding: 5px 15px; 
+    border-radius: 50px; 
+    font-size: 0.85rem; 
+    color: #fff; 
+    border: 1px solid rgba(255,255,255,0.1); 
+}
+
+/* Overview Text */
+#detail-overview {
+    max-width: 800px;
+    font-size: 1.1rem;
+    line-height: 1.6;
+    color: #d1d5db;
+    margin-left: 0;
+    margin-right: auto;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+    margin-bottom: 30px;
+}
+
+/* Buttons */
+.detail-actions {
+    display: flex;
+    justify-content: flex-start; /* Align left */
+    gap: 20px;
+    width: 100%;
+    max-width: 500px;
+}
+
+.play-btn-primary {
+    padding: 12px 30px;
+    font-size: 1.2rem;
+    border-radius: 4px;
+    background: #e50914;
+    color: #fff;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
     justify-content: center;
+    gap: 10px;
+    transition: transform 0.2s;
 }
 
-/* --- DESKTOP DESIGN (Min-width: 1024px - Split) --- */
-@media (min-width: 1024px) {
-    
-    .detail-content-wrapper {
-        justify-content: center; /* Center content vertically */
-        padding-top: 60px;
-    }
+.play-btn-primary:hover { transform: scale(1.05); }
 
+.watchlist-btn {
+    padding: 12px 30px;
+    font-size: 1.2rem;
+    border-radius: 4px;
+    background: rgba(255,255,255,0.1);
+    color: #fff;
+    font-weight: 600;
+    border: 1px solid rgba(255,255,255,0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    transition: background 0.2s;
+}
+
+.watchlist-btn:hover { background: rgba(255,255,255,0.2); }
+
+/* Rating Box */
+.rating-box { color: #46d369; font-weight: 700; }
+
+/* --- 4. RECOMMENDATIONS GRID --- */
+.recommendations-section {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid #333;
+}
+
+/* --- MOBILE RESPONSIVENESS (Stack them on phones) --- */
+@media (max-width: 900px) {
     .detail-hero-layout {
-        flex-direction: row;       /* Side-by-side */
-        align-items: flex-end;     /* Align bottom of poster with text */
-        text-align: left;          /* Left align text */
-        gap: 50px;                 /* Space between poster and text */
-        padding: 0 40px;
+        flex-direction: column; /* Stack vertically */
+        align-items: center;
+        text-align: center;
+        gap: 20px;
     }
 
     .detail-poster-card {
-        width: 300px; /* Big poster on desktop */
-        flex-shrink: 0;
-        box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+        width: 180px; /* Smaller poster */
+        margin-top: -100px; /* Pull it up over the banner */
     }
 
     .detail-info-box {
-        align-items: flex-start; /* Align flex items to left */
-        flex: 1;
-        padding-bottom: 10px;
-    }
-
-    #detail-title {
-        font-size: 4rem; /* Huge title */
-        text-shadow: 0 2px 10px rgba(0,0,0,0.8);
+        align-items: center; /* Center align text */
     }
 
     .detail-meta-row, .genre-pills-row, .detail-actions {
-        justify-content: flex-start; /* Left align rows */
+        justify-content: center;
+    }
+
+    #detail-title {
+        font-size: 2rem;
     }
 
     #detail-overview {
-        text-align: left;
-        max-width: 800px;
-        font-size: 1.1rem;
-    }
-
-    /* Adjust gradient for desktop (Left to Right fade) */
-    .detail-overlay-gradient {
-        background: linear-gradient(to right, #0f0f0f 20%, rgba(15,15,15,0.9) 50%, rgba(15,15,15,0.6) 100%);
+        text-align: center;
     }
 }
 
-/* --- COMMON ELEMENTS --- */
-.detail-meta-row { display: flex; align-items: center; gap: 10px; color: #ccc; margin-bottom: 15px; font-weight: 500; }
-.rating-box { color: #46d369; font-weight: 700; }
-.genre-pills-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
-.genre-pill { background: rgba(255,255,255,0.15); backdrop-filter: blur(5px); padding: 5px 15px; border-radius: 50px; font-size: 0.85rem; color: #fff; border: 1px solid rgba(255,255,255,0.1); }
-#detail-overview { font-size: 1rem; line-height: 1.6; color: #bbb; margin-bottom: 30px; }
 
 /* Buttons */
 .detail-actions { display: flex; gap: 15px; width: 100%; max-width: 500px; }
@@ -2247,4 +2482,331 @@ input {
         background-color: #e50914;
         box-shadow: 0 -2px 10px rgba(229, 9, 20, 0.5);
     }
+}
+
+/* =========================================
+   FIX FOR CATEGORY VIEW (See All)
+   ========================================= */
+
+#category-grid {
+    display: grid;
+    /* Create a responsive grid: Cards are at least 130px wide, max fits available space */
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 15px;
+    width: 100%;
+    padding-bottom: 50px;
+}
+
+/* Ensure the card fills its grid cell perfectly */
+#category-grid .movie-card {
+    width: 100%; 
+    min-width: 0; /* Prevents overflow issues */
+}
+
+/* Optional: Make cards slightly smaller on mobile to fit more */
+@media (max-width: 768px) {
+    #category-grid {
+        grid-template-columns: repeat(auto-fit minmax(110px, 1fr));
+        gap: 10px;
+    }
+}
+/* =========================================
+   FIX FOR GRID GAPS (Mobile)
+   ========================================= */
+
+/* On Mobile/Tablets, force 2 columns so 20 items fit perfectly (2x10) */
+@media (max-width: 900px) {
+    #category-grid, 
+    #search-results {
+        /* Force exactly 2 columns */
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 10px;
+    }
+    
+    /* Make the cards slightly taller to look good */
+    #category-grid .movie-card,
+    #search-results .movie-card {
+        width: 100%;
+    }
+}
+/* =========================================
+   BRUTALIST FOOTER (Big Text Style)
+   ========================================= */
+
+.footer {
+    background: #0a0a0a; /* Deep black */
+    color: #fff;
+    padding: 80px 4% 30px;
+    border-top: 1px solid #222;
+    overflow: hidden;
+    margin-top: auto;
+}
+
+.footer-content {
+    max-width: 1400px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 60px;
+}
+
+/* --- TOP SECTION --- */
+.footer-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 40px;
+}
+
+/* Description Box */
+.footer-desc {
+    max-width: 400px;
+}
+
+.footer-desc h4 {
+    font-size: 0.85rem;
+    color: #666;
+    letter-spacing: 1px;
+    margin-bottom: 20px;
+    text-transform: uppercase;
+}
+
+.footer-desc p {
+    font-size: 1rem;
+    line-height: 1.6;
+    color: #ccc;
+}
+
+/* Navigation Wrapper */
+.footer-nav-wrapper {
+    display: flex;
+    gap: 80px;
+}
+
+.footer-col {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.col-title {
+    font-size: 0.85rem;
+    color: #666;
+    letter-spacing: 1px;
+    margin-bottom: 5px;
+    text-transform: uppercase;
+}
+
+.footer-col a {
+    color: #fff;
+    text-decoration: none;
+    font-size: 1.2rem;
+    font-weight: 500;
+    transition: color 0.3s ease;
+    cursor: pointer;
+}
+
+.footer-col a:hover {
+    color: var(--accent-color); /* Turns Red on Hover */
+}
+
+/* Social Row Styling */
+.social-row {
+    display: flex;
+    gap: 15px;
+}
+
+.social-row a {
+    width: 40px;
+    height: 40px;
+    background: #222;
+    border-radius: 8px; /* Slightly square like reference */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    transition: all 0.3s ease;
+}
+
+.social-row a:hover {
+    background: #fff;
+    color: #000;
+    transform: translateY(-3px);
+}
+
+/* --- GIANT TEXT SECTION --- */
+.footer-big-text {
+    font-family: 'Outfit', sans-serif;
+    font-size: clamp(3rem, 16vw, 12rem); /* HUGE responsive text */
+    font-weight: 800;
+    color: #1a1a1a; /* Very dark grey, barely visible */
+    text-align: center;
+    line-height: 0.8;
+    letter-spacing: -4px;
+    user-select: none;
+    white-space: nowrap;
+    margin: 20px 0;
+}
+
+/* --- BOTTOM SECTION --- */
+.footer-bottom {
+    display: flex;
+    justify-content: space-between;
+    border-top: 1px solid #222;
+    padding-top: 30px;
+    font-size: 0.8rem;
+    color: #555;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* --- RESPONSIVE MOBILE --- */
+@media (max-width: 768px) {
+    .footer-top {
+        flex-direction: column;
+        align-items: center;   /* Center the top description */
+        text-align: center;    /* Center text alignment */
+        gap: 50px;
+    }
+    
+    .footer-nav-wrapper {
+        flex-direction: column; 
+        gap: 40px;
+        width: 100%;
+        align-items: center;   /* Center the wrapper items */
+    }
+
+    .footer-col {
+        align-items: center;   /* Center the items inside the column (Links/Titles) */
+        width: 100%;           /* Ensure it spans full width */
+    }
+
+    /* THIS FIXES THE ICONS */
+    .social-row {
+        justify-content: center; /* Pushes icons to the middle */
+        width: 100%;
+    }
+
+    .footer-big-text {
+        letter-spacing: -2px; 
+    }
+
+    .footer-bottom {
+        flex-direction: column;
+        gap: 10px;
+        text-align: center;
+    }
+}
+/* =========================================
+   SLIDER ARROWS (Left & Right Navigation)
+   ========================================= */
+
+.slider-arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%); /* Vertically Center */
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    
+    background: rgba(0, 0, 0, 0.5); /* Semi-transparent dark */
+    backdrop-filter: blur(4px);     /* Glass effect */
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #fff;
+    
+    font-size: 1.2rem;
+    cursor: pointer;
+    z-index: 20; /* Sit above the slides */
+    
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+
+/* Only allow white hover on PC/Laptop (Devices with a mouse) */
+@media (hover: hover) {
+    .slider-arrow:hover {
+        background: #fff;
+        color: #000;
+        transform: translateY(-50%) scale(1.1);
+        box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
+    }
+}
+
+/* Positioning */
+.prev-arrow {
+    left: 20px;
+}
+
+.next-arrow {
+    right: 20px;
+}
+
+/* Mobile Adjustments (Make them smaller so they don't block view) */
+@media (max-width: 768px) {
+    .slider-arrow {
+        width: 40px;
+        height: 40px;
+        font-size: 1rem;
+        background: rgba(0, 0, 0, 0.3);
+    }
+    .prev-arrow { left: 10px; }
+    .next-arrow { right: 10px; }
+}
+/* =========================================
+   CLICK HIGHLIGHT EFFECT
+   ========================================= */
+
+.slider-arrow.clicked {
+    background: var(--accent-color) !important; /* Flash Red */
+    color: #fff !important;
+    box-shadow: 0 0 25px rgba(229, 9, 20, 0.8) !important; /* Strong Glow */
+    transform: translateY(-50%) scale(1.2) !important; /* Pop bigger */
+    transition: all 0.05s ease; /* Instant ON */
+}
+/* =========================================
+   FIX: SMART MENU ALIGNMENT (FINAL)
+   ========================================= */
+
+/* 1. General Safety Cap for Mobile */
+/* Ensures no menu is ever wider than the screen */
+.pill-menu {
+    max-width: 85vw;
+}
+
+/* 2. SERVER MENU (Top Left) -> Anchor Left */
+/* Target strictly the FIRST button in the server row */
+.row-server .pill-wrapper:first-child .pill-menu {
+    left: 0 !important;
+    right: auto !important;
+    transform: scale(0.95) !important; /* Remove translateX centering */
+    transform-origin: bottom left !important;
+}
+.row-server .pill-wrapper:first-child .pill-dropdown.open + .pill-menu {
+    transform: scale(1) !important;
+}
+
+/* 3. SEASON MENU (Top Right) -> Anchor Right */
+/* Target strictly the LAST button in the server row */
+.row-server .pill-wrapper:last-child .pill-menu {
+    left: auto !important;
+    right: 0 !important; /* Locks menu to the right edge of the button */
+    transform: scale(0.95) !important;
+    transform-origin: bottom right !important;
+}
+.row-server .pill-wrapper:last-child .pill-dropdown.open + .pill-menu {
+    transform: scale(1) !important;
+}
+
+/* 4. EPISODE MENU (Bottom Right) -> Anchor Right */
+.row-nav .pill-wrapper:last-child .pill-menu {
+    left: auto !important;
+    right: 0 !important;
+    transform: scale(0.95) !important;
+    transform-origin: bottom right !important;
+}
+.row-nav .pill-wrapper:last-child .pill-dropdown.open + .pill-menu {
+    transform: scale(1) !important;
 }
